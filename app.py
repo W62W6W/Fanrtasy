@@ -292,7 +292,7 @@ estado = sala.get("estado", "esperando")
 seleccion_abierta = bool(sala.get("seleccion_abierta", False))
 jornada_actual = int(sala.get("jornada_actual", 0))
 jugadores_sala = sala.get("jugadores") or {}
-torneo = obtener_torneo(codigo_sala)
+torneo = obtener_torneo(codigo)
 
 st.markdown(
     f'<div class="room-code">{codigo}</div>',
