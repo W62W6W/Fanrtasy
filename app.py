@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 from firebase import (
     crear_sala,
     obtener_sala,
@@ -270,6 +271,19 @@ if "player_id" not in st.session_state:
 
 if "admin_id" not in st.session_state:
     st.session_state.admin_id = None
+
+# ============================================================
+# ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
+# ============================================================
+# Mientras un usuario está dentro de una sala, la pantalla se
+# actualiza cada 3 segundos para detectar nuevos jugadores,
+# cambios del administrador, jugadores listos y resultados.
+if st.session_state.get("rol") in ("admin", "player"):
+    st_autorefresh(
+        interval=3000,
+        limit=None,
+        key="fantasy_sala_autorefresh",
+    )
 
 # ============================================================
 # PANTALLA INICIAL
