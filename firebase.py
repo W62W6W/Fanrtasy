@@ -207,7 +207,7 @@ def iniciar_partida(codigo):
     doc = ref.get()
 
     if not doc.exists:
-        return False, "La sala no existe."
+        return False, "La sala no existe.", None
 
     sala = doc.to_dict()
 
