@@ -1,34 +1,60 @@
-
+import os
+import json
+import uuid
 import random
 import string
-import uuid
 
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-SERVICE_ACCOUNT = "serviceAccountKey.json"
 MAX_JUGADORES = 30
+NOMBRE_COLECCION = "salas"
 
 
 def inicializar_firebase():
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(SERVICE_ACCOUNT)
-        firebase_admin.initialize_app(cred)
+    """Inicializa Firebase usando Streamlit Secrets en la nube
+    o serviceAccountKey.json cuando se ejecuta localmente.
+    """
+    if firebase_admin._apps:
+        return firestore.client()
+
+    # Streamlit Cloud: usa st.secrets["firebase"]
+    try:
+        import streamlit as st
+
+        if "firebase" in st.secrets:
+            datos_credenciales = dict(st.secrets["firebase"])
+            cred = credentials.Certificate(datos_credenciales)
+            firebase_admin.initialize_app(cred)
+            return firestore.client()
+    except Exception:
+        pass
+
+    # Local: usa el archivo privado que NO debe subirse a GitHub.
+    ruta = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
+
+    if not os.path.exists(ruta):
+        raise FileNotFoundError(
+            "No se encontró serviceAccountKey.json y tampoco están configurados "
+            "los Secrets de Firebase en Streamlit."
+        )
+
+    cred = credentials.Certificate(ruta)
+    firebase_admin.initialize_app(cred)
     return firestore.client()
 
 
-db = inicializar_firebase()
-
-
 def generar_codigo_sala():
-    caracteres = string.ascii_uppercase + string.digits
+    db = inicializar_firebase()
+
     while True:
-        codigo = "".join(random.choices(caracteres, k=6))
-        if not db.collection("salas").document(codigo).get().exists:
+        codigo = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        if not db.collection(NOMBRE_COLECCION).document(codigo).get().exists:
             return codigo
 
 
 def crear_sala(nombre_admin):
+    db = inicializar_firebase()
     codigo = generar_codigo_sala()
     admin_id = str(uuid.uuid4())
 
@@ -45,16 +71,14 @@ def crear_sala(nombre_admin):
         "resultados_jornadas": {},
     }
 
-    db.collection("salas").document(codigo).set(sala)
+    db.collection(NOMBRE_COLECCION).document(codigo).set(sala)
     return codigo, admin_id
 
 
 def obtener_sala(codigo):
-    if not codigo:
-        return None
-
-    codigo = codigo.upper().strip()
-    doc = db.collection("salas").document(codigo).get()
+    db = inicializar_firebase()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo.upper())
+    doc = ref.get()
 
     if not doc.exists:
         return None
@@ -63,228 +87,244 @@ def obtener_sala(codigo):
 
 
 def unirse_sala(codigo, nombre_jugador):
-    codigo = codigo.upper().strip()
-    ref = db.collection("salas").document(codigo)
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
     doc = ref.get()
 
     if not doc.exists:
-        return False, "La sala no existe.", None
+        return None, "La sala no existe."
 
     sala = doc.to_dict()
-    estado = sala.get("estado", "esperando")
 
-    if estado != "esperando":
-        return False, "El administrador todavía no permite nuevas entradas.", None
+    # Permitimos entrar mientras la partida todavía no ha comenzado.
+    if sala.get("estado") in ("jugando", "resultado", "final"):
+        return None, "La partida ya comenzó y no se permiten nuevos jugadores."
 
-    jugadores = sala.get("jugadores") or {}
+    jugadores = sala.get("jugadores", {})
 
     if len(jugadores) >= MAX_JUGADORES:
-        return False, f"La sala está llena. Máximo {MAX_JUGADORES} jugadores.", None
+        return None, "La sala ya alcanzó los 30 jugadores."
 
     player_id = str(uuid.uuid4())
 
     jugadores[player_id] = {
-        "id": player_id,
         "nombre": nombre_jugador,
         "equipo": [],
-        "presupuesto_restante": 0,
+        "presupuesto": 0,
         "listo": False,
         "puntos_jornada": 0,
         "puntos_totales": 0,
     }
 
     ref.update({"jugadores": jugadores})
-    return True, "Te has unido correctamente.", player_id
+    return player_id, None
+
+
+def guardar_equipo(codigo, player_id, equipo, presupuesto):
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
+    doc = ref.get()
+
+    if not doc.exists:
+        return False, "La sala no existe."
+
+    sala = doc.to_dict()
+
+    if not sala.get("seleccion_abierta", False):
+        return False, "El administrador todavía no ha abierto la selección."
+
+    jugadores = sala.get("jugadores", {})
+
+    if player_id not in jugadores:
+        return False, "Jugador no encontrado."
+
+    jugadores[player_id]["equipo"] = equipo
+    jugadores[player_id]["presupuesto"] = presupuesto
+    jugadores[player_id]["listo"] = False
+
+    ref.update({"jugadores": jugadores})
+    return True, None
+
+
+def marcar_listo(codigo, player_id):
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
+    doc = ref.get()
+
+    if not doc.exists:
+        return False
+
+    sala = doc.to_dict()
+    jugadores = sala.get("jugadores", {})
+
+    if player_id not in jugadores:
+        return False
+
+    jugadores[player_id]["listo"] = True
+    ref.update({"jugadores": jugadores})
+    return True
 
 
 def abrir_seleccion(codigo):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
-
-    if not sala:
-        return False, "La sala no existe."
-
+    db = inicializar_firebase()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo.upper())
     ref.update({
         "estado": "seleccion",
         "seleccion_abierta": True,
     })
-    return True, "Selección abierta."
 
 
 def cerrar_seleccion(codigo):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
-
-    if not sala:
-        return False, "La sala no existe."
-
+    db = inicializar_firebase()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo.upper())
     ref.update({
         "estado": "esperando",
         "seleccion_abierta": False,
     })
-    return True, "Selección cerrada."
 
 
-def guardar_equipo(codigo, player_id, equipo, presupuesto_restante):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
+def todos_jugadores_listos(codigo):
+    sala = obtener_sala(codigo)
 
     if not sala:
-        return False, "La sala no existe."
+        return False
 
-    if sala.get("estado") != "seleccion" or not sala.get("seleccion_abierta"):
-        return False, "La selección está cerrada."
+    jugadores = sala.get("jugadores", {})
 
-    jugadores = sala.get("jugadores") or {}
+    if not jugadores:
+        return False
 
-    if player_id not in jugadores:
-        return False, "Jugador no encontrado."
-
-    jugadores[player_id]["equipo"] = list(equipo)
-    jugadores[player_id]["presupuesto_restante"] = presupuesto_restante
-    jugadores[player_id]["listo"] = False
-
-    ref.update({"jugadores": jugadores})
-    return True, "Equipo guardado."
-
-
-def marcar_listo(codigo, player_id, listo=True):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
-
-    if not sala:
-        return False, "La sala no existe."
-
-    jugadores = sala.get("jugadores") or {}
-
-    if player_id not in jugadores:
-        return False, "Jugador no encontrado."
-
-    jugadores[player_id]["listo"] = bool(listo)
-    ref.update({"jugadores": jugadores})
-    return True, "Estado actualizado."
-
-
-def todos_jugadores_listos(sala):
-    jugadores = sala.get("jugadores") or {}
-    return bool(jugadores) and all(
-        jugador.get("listo", False)
-        for jugador in jugadores.values()
-    )
+    return all(j.get("listo", False) for j in jugadores.values())
 
 
 def iniciar_partida(codigo):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
+    doc = ref.get()
 
-    if not sala:
+    if not doc.exists:
         return False, "La sala no existe."
 
-    jugadores = sala.get("jugadores") or {}
+    sala = doc.to_dict()
 
-    if not jugadores:
-        return False, "Se necesita al menos un jugador."
+    if not sala.get("torneo"):
+        return False, "Primero hay que generar el torneo."
 
-    if not todos_jugadores_listos(sala):
+    if not sala.get("jugadores"):
+        return False, "Debe haber al menos un jugador."
+
+    if not todos_jugadores_listos(codigo):
         return False, "No todos los jugadores están listos."
-
-    torneo = obtener_torneo(sala)
-
-    if torneo is None:
-        return False, "El torneo todavía no ha sido generado."
 
     ref.update({
         "estado": "jugando",
-        "seleccion_abierta": False,
         "jornada_actual": 1,
+        "seleccion_abierta": False,
     })
-    return True, "Partida iniciada."
+
+    return True, None
 
 
-def guardar_torneo(codigo, torneo):
-    torneo_json = json.dumps(torneo, ensure_ascii=False)
+def guardar_torneo(codigo, torneo, jornada_actual=0):
+    db = inicializar_firebase()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo.upper())
 
-    db.collection("salas").document(codigo.upper().strip()).update({
+    # Firestore no acepta directamente algunas estructuras complejas
+    # generadas por el simulador, por eso guardamos el torneo como JSON.
+    torneo_json = json.dumps(torneo, ensure_ascii=False, default=str)
+
+    ref.update({
         "torneo": torneo_json,
-        "jornada_actual": 0,
+        "jornada_actual": jornada_actual,
     })
-    return True
 
 
-def obtener_torneo(sala):
+def obtener_torneo(codigo):
+    sala = obtener_sala(codigo)
+
+    if not sala:
+        return None
+
     torneo = sala.get("torneo")
 
+    if not torneo:
+        return None
+
     if isinstance(torneo, str):
-        try:
-            return json.loads(torneo)
-        except json.JSONDecodeError:
-            return None
+        return json.loads(torneo)
 
     return torneo
 
 
-def guardar_resultado_jornada(codigo, jornada, resultados, puntos_jugadores):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
+def guardar_resultado_jornada(codigo, jornada, puntos_por_jugador):
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
+    doc = ref.get()
 
-    if not sala:
-        return False, "La sala no existe."
+    if not doc.exists:
+        return False
 
-    jugadores = sala.get("jugadores") or {}
-    resultados_jornadas = sala.get("resultados_jornadas") or {}
+    sala = doc.to_dict()
+    jugadores = sala.get("jugadores", {})
 
-    resultados_jornadas[str(jornada)] = resultados
+    for player_id, puntos in puntos_por_jugador.items():
+        if player_id in jugadores:
+            jugadores[player_id]["puntos_jornada"] = puntos
+            jugadores[player_id]["puntos_totales"] = (
+                jugadores[player_id].get("puntos_totales", 0) + puntos
+            )
 
-    for player_id, puntos in puntos_jugadores.items():
-        if player_id not in jugadores:
-            continue
-
-        jugadores[player_id]["puntos_jornada"] = round(float(puntos), 2)
-        jugadores[player_id]["puntos_totales"] = round(
-            float(jugadores[player_id].get("puntos_totales", 0))
-            + float(puntos),
-            2,
-        )
-
-    estado = "final" if int(jornada) >= 7 else "resultado"
+    estado = "final" if jornada >= 7 else "resultado"
 
     ref.update({
         "jugadores": jugadores,
-        "resultados_jornadas": resultados_jornadas,
-        "jornada_actual": int(jornada),
+        "jornada_actual": jornada,
         "estado": estado,
         "seleccion_abierta": False,
+        f"resultados_jornadas.jornada_{jornada}": puntos_por_jugador,
     })
-    return True, "Jornada guardada."
+
+    return True
 
 
 def avanzar_jornada(codigo):
-    ref = db.collection("salas").document(codigo.upper().strip())
-    sala = ref.get().to_dict()
+    db = inicializar_firebase()
+    codigo = codigo.upper()
+    ref = db.collection(NOMBRE_COLECCION).document(codigo)
+    doc = ref.get()
 
-    if not sala:
+    if not doc.exists:
         return False, "La sala no existe."
 
-    jornada = int(sala.get("jornada_actual", 1))
+    sala = doc.to_dict()
+    jornada_actual = int(sala.get("jornada_actual", 0))
 
-    if jornada >= 7:
-        ref.update({"estado": "final"})
-        return True, "Torneo terminado."
+    if jornada_actual >= 7:
+        return False, "El torneo ya terminó."
 
-    jugadores = sala.get("jugadores") or {}
+    jugadores = sala.get("jugadores", {})
 
     for jugador in jugadores.values():
         jugador["listo"] = False
         jugador["puntos_jornada"] = 0
 
+    nueva_jornada = jornada_actual + 1
+
     ref.update({
         "jugadores": jugadores,
-        "jornada_actual": jornada + 1,
+        "jornada_actual": nueva_jornada,
         "estado": "seleccion",
         "seleccion_abierta": True,
     })
-    return True, "Siguiente jornada preparada."
+
+    return True, None
 
 
 def eliminar_sala(codigo):
-    db.collection("salas").document(codigo.upper().strip()).delete()
+    db = inicializar_firebase()
+    db.collection(NOMBRE_COLECCION).document(codigo.upper()).delete()
