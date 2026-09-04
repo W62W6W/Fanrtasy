@@ -31,6 +31,7 @@ st.set_page_config(
 PRESUPUESTO = 540_000_000
 MAX_JUGADORES = 30
 FORMACION = {"POR": 1, "DEF": 4, "MED": 3, "DEL": 3}
+NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", "DEL": "Delantero"}
 
 # ============================================================
 # ESTILO
@@ -160,8 +161,9 @@ def jugador_html(jugador):
         <div class="player-card">
             <div class="player-name">{jugador['nombre']}</div>
             <div class="player-info">
-                {jugador.get('equipo','')} · {jugador.get('posicion','')}
+                {jugador.get('equipo','')} · {NOMBRES_POSICION.get(jugador.get('posicion',''), jugador.get('posicion',''))}
             </div>
+            <div class="player-info">⚔️ Ataque: {jugador.get('ataque', jugador.get('atk', '—'))} · 🛡️ Defensa: {jugador.get('defensa', jugador.get('def', '—'))}</div>
             <div class="player-info">💰 {dinero(jugador.get('precio', 0))}</div>
         </div>
         """,
@@ -191,13 +193,13 @@ def mostrar_alineacion(equipo, titulo="TU ALINEACIÓN"):
                 j = jugadores[posiciones[pos][i]]
                 st.markdown(
                     f'<div class="slot filled"><b>{j["nombre"]}</b><br>'
-                    f'<span style="color:#aaa">{j["equipo"]} · '
+                    f'<span style="color:#aaa">{j["equipo"]} · {NOMBRES_POSICION.get(j["posicion"], j["posicion"])} · '
                     f'{dinero(j.get("precio",0))}</span></div>',
                     unsafe_allow_html=True,
                 )
             else:
                 st.markdown(
-                    f'<div class="slot">{pos} vacío</div>',
+                    f'<div class="slot">{NOMBRES_POSICION.get(pos, pos)} vacío</div>',
                     unsafe_allow_html=True,
                 )
 
@@ -641,9 +643,9 @@ if seleccion_abierta and not ya_seleccionado:
         if not plantilla_completa(mi_equipo):
             p = contar_posiciones(mi_equipo)
             st.caption(
-                f"Necesitas 1 POR, 4 DEF, 3 MED y 3 DEL. "
-                f"Actualmente: {p['POR']} POR · {p['DEF']} DEF · "
-                f"{p['MED']} MED · {p['DEL']} DEL."
+                f"Necesitas 1 Portero, 4 Defensas, 3 Mediocampistas y 3 Delanteros. "
+                f"Actualmente: {p['POR']} Portero · {p['DEF']} Defensa · "
+                f"{p['MED']} Mediocampista · {p['DEL']} Delantero."
             )
 
     # ---------------- MERCADO ----------------
@@ -652,8 +654,17 @@ if seleccion_abierta and not ya_seleccionado:
 
         filtro_pos = st.selectbox(
             "Posición",
-            ["Todos", "POR", "DEF", "MED", "DEL"],
+            ["Todos", "Portero", "Defensa", "Mediocampista", "Delantero"],
         )
+        filtro_pos_map = {
+            "Todos": "Todos",
+            "Portero": "POR",
+            "Defensa": "DEF",
+            "Mediocampista": "MED",
+            "Delantero": "DEL",
+        }
+        filtro_pos_codigo = filtro_pos_map[filtro_pos]
+
         filtro_eq = st.selectbox(
             "Selección",
             ["Todos"] + sorted(
@@ -671,7 +682,7 @@ if seleccion_abierta and not ya_seleccionado:
             pos = jugador.get("posicion")
             eq = jugador.get("equipo")
 
-            if filtro_pos != "Todos" and pos != filtro_pos:
+            if filtro_pos_codigo != "Todos" and pos != filtro_pos_codigo:
                 continue
             if filtro_eq != "Todos" and eq != filtro_eq:
                 continue
@@ -685,7 +696,7 @@ if seleccion_abierta and not ya_seleccionado:
 
             if actuales.get(pos, 0) >= limites.get(pos, 0):
                 st.button(
-                    f"LÍMITE DE {pos}",
+                    f"LÍMITE DE {NOMBRES_POSICION.get(pos, pos)}",
                     key=f"lim_{pid}",
                     disabled=True,
                     use_container_width=True,
