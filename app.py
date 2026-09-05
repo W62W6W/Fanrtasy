@@ -423,66 +423,105 @@ if st.session_state.rol == "admin":
         seleccion_abierta = bool(sala.get("seleccion_abierta", False))
         jornada_actual = int(sala.get("jornada_actual", 0))
 
-        # Antes de empezar: abrir selección.
-        if sala.get("estado") == "esperando" and jornada_actual == 0:
+        # ========================================================
+        # FLUJO DE LA PARTIDA
+        # ========================================================
+        # 1) Abrir selección
+        # 2) Todos los jugadores completan y pulsan LISTO
+        # 3) El admin pulsa EMPEZAR PARTIDA
+        # 4) El admin pulsa SIMULAR JORNADA 1, 2, 3... 7
+        # Las alineaciones NO se vuelven a abrir.
+
+        seleccion_abierta = bool(sala.get("seleccion_abierta", False))
+        jornada_actual = int(sala.get("jornada_actual", 0))
+        resultados_guardados = torneo.get("resultados") or []
+
+        # ---------------- PREPARACIÓN ----------------
+        if jornada_actual == 0:
             if not seleccion_abierta:
-                if st.button("🔓 ABRIR SELECCIÓN", use_container_width=True):
+                if st.button(
+                    "🔓 ABRIR SELECCIÓN",
+                    use_container_width=True,
+                ):
                     abrir_seleccion(codigo)
                     st.rerun()
             else:
-                st.success("🟢 Selección abierta.")
-                if st.button("🔒 CERRAR SELECCIÓN", use_container_width=True):
-                    cerrar_seleccion(codigo)
-                    st.rerun()
+                st.success("🟢 SELECCIÓN ABIERTA")
 
                 todos_listos = todos_jugadores_listos(sala)
-                if todos_listos:
-                    st.success("Todos los jugadores están LISTOS.")
-                else:
-                    st.warning("Faltan jugadores por marcar LISTO.")
+                jugadores_completos = all(
+                    len(j.get("equipo") or []) == 11
+                    for j in jugadores_sala.values()
+                ) if jugadores_sala else False
 
+                if todos_listos and jugadores_completos:
+                    st.success("✅ TODOS LOS JUGADORES ESTÁN LISTOS.")
+                elif not jugadores_sala:
+                    st.warning("Todavía no hay jugadores.")
+                else:
+                    pendientes = sum(
+                        1 for j in jugadores_sala.values()
+                        if not j.get("listo", False)
+                    )
+                    incompletos = sum(
+                        1 for j in jugadores_sala.values()
+                        if len(j.get("equipo") or []) != 11
+                    )
+                    st.warning(
+                        f"Faltan {pendientes} jugador(es) por marcar LISTO "
+                        f"y {incompletos} por completar la alineación."
+                    )
+
+                # Este botón es el equivalente a "EMPEZAR SELECCIÓN":
+                # ahora inicia oficialmente la partida.
                 if st.button(
-                    "🚀 INICIAR PARTIDA",
-                    disabled=not todos_listos,
+                    "🚀 EMPEZAR PARTIDA",
+                    disabled=not (todos_listos and jugadores_completos),
                     use_container_width=True,
                 ):
                     ok, mensaje = iniciar_partida(codigo)
                     if not ok:
                         st.error(mensaje)
                     else:
+                        st.success("🚀 ¡PARTIDA INICIADA!")
                         st.rerun()
 
-        # Partida en curso: el admin controla cada jornada.
-        elif sala.get("estado") in ("jugando", "resultado", "final"):
-            resultados_guardados = torneo.get("resultados") or []
-            jornada_actual = int(sala.get("jornada_actual", 0))
+                st.caption(
+                    "Una vez iniciada la partida, las alineaciones quedan "
+                    "bloqueadas y el administrador controla las jornadas."
+                )
 
-            # La jornada que toca simular es siempre len(resultados) + 1.
-            # Así evitamos que el estado de Firestore deje al botón
-            # bloqueado por una incoherencia entre jornada y resultados.
+        # ---------------- JORNADAS ----------------
+        elif sala.get("estado") in ("jugando", "resultado", "final"):
+            # La jornada que toca simular es siempre resultados + 1.
+            # Así no dependemos de que jornada_actual se haya quedado
+            # desfasada en una actualización de la página.
             siguiente_jornada = len(resultados_guardados) + 1
 
             if siguiente_jornada <= 7:
-                st.info(
-                    f"🎮 La partida está en curso. "
-                    f"La siguiente jornada disponible es la **Jornada {siguiente_jornada}**."
-                )
+                if siguiente_jornada == 1:
+                    st.success(
+                        "🚀 PARTIDA INICIADA. Las alineaciones están bloqueadas."
+                    )
+                else:
+                    st.success(
+                        f"Jornada {siguiente_jornada - 1} terminada. "
+                        "Las alineaciones permanecen bloqueadas."
+                    )
+
+                st.header(f"🏟️ JORNADA {siguiente_jornada}")
 
                 if st.button(
                     f"▶️ SIMULAR JORNADA {siguiente_jornada}",
-                    use_container_width=True,
                     key=f"simular_jornada_{siguiente_jornada}",
+                    use_container_width=True,
                 ):
                     partidos = torneo["jornadas"][siguiente_jornada - 1]
                     resultados = simular_jornada(partidos)
                     puntos = {}
 
-                    # Recargamos la sala justo antes de calcular los puntos,
-                    # para usar las alineaciones guardadas más recientes.
-                    sala_para_puntos = obtener_sala(codigo) or sala
-                    jugadores_sala_actual = sala_para_puntos.get("jugadores") or {}
-
-                    for pid, jugador in jugadores_sala_actual.items():
+                    # Puntos de cada usuario para ESTA jornada.
+                    for pid, jugador in jugadores_sala.items():
                         equipo_fantasy = jugador.get("equipo") or []
                         puntos_jugador, _ = puntos_de_jornada(
                             resultados,
@@ -492,38 +531,35 @@ if st.session_state.rol == "admin":
 
                     torneo["resultados"].append(resultados)
 
-                    # Guardamos primero los resultados.
+                    # jornada_actual representa la última jornada terminada.
                     guardar_torneo(
                         codigo,
                         torneo,
                         siguiente_jornada,
                     )
 
-                    # Después actualizamos los puntos de los jugadores.
                     guardar_resultado_jornada(
                         codigo,
                         siguiente_jornada,
                         puntos,
                     )
-                    st.success(
-                        f"Jornada {siguiente_jornada} simulada correctamente."
-                    )
                     st.rerun()
 
-            else:
-                st.success("🏆 TORNEO TERMINADO.")
-
-            # Mostrar resultados de la última jornada ya jugada.
-            if resultados_guardados:
-                ultima = resultados_guardados[-1]
-                st.subheader(
-                    f"📋 Resultado de la Jornada {len(resultados_guardados)}"
-                )
-                for partido in ultima:
-                    st.write(
-                        f"**{partido['equipo_a']} {partido['goles_a']} - "
-                        f"{partido['goles_b']} {partido['equipo_b']}**"
+                # Mostrar la última jornada ya jugada.
+                if resultados_guardados:
+                    ultima = resultados_guardados[-1]
+                    st.subheader(
+                        f"📋 Resultado de la jornada {len(resultados_guardados)}"
                     )
+                    for partido in ultima:
+                        st.write(
+                            f"**{partido['equipo_a']} {partido['goles_a']} - "
+                            f"{partido['goles_b']} {partido['equipo_b']}**"
+                        )
+
+            else:
+                st.success("🏆 TORNEO TERMINADO")
+                st.write("Se han disputado las 7 jornadas.")
 
         st.divider()
         st.header("🏆 CLASIFICACIÓN")
@@ -536,10 +572,14 @@ if st.session_state.rol == "admin":
         )
 
         if ranking:
+            st.markdown("### 🏆 CLASIFICACIÓN DE LA SALA")
             for i, (_, jugador) in enumerate(ranking, 1):
+                puntos_total = float(jugador.get("puntos_totales", 0))
+                puntos_jornada = float(jugador.get("puntos_jornada", 0))
                 st.write(
                     f"**{i}. {jugador.get('nombre','')}** — "
-                    f"⭐ {float(jugador.get('puntos_totales',0)):.2f} puntos"
+                    f"⭐ {puntos_total:.2f} puntos "
+                    f"(esta jornada: {puntos_jornada:.2f})"
                 )
 
     st.divider()
