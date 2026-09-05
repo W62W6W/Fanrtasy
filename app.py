@@ -453,85 +453,77 @@ if st.session_state.rol == "admin":
                         st.rerun()
 
         # Partida en curso: el admin controla cada jornada.
-        elif sala.get("estado") in ("jugando", "resultado"):
+        elif sala.get("estado") in ("jugando", "resultado", "final"):
             resultados_guardados = torneo.get("resultados") or []
+            jornada_actual = int(sala.get("jornada_actual", 0))
 
-            # Si la jornada actual ya tiene resultado, mostramos resultado
-            # y ofrecemos la siguiente jornada. NO abrimos selección otra vez.
-            if len(resultados_guardados) >= jornada_actual:
-                st.success(
-                    f"Jornada {jornada_actual} terminada. "
-                    "Las alineaciones permanecen bloqueadas."
+            # La jornada que toca simular es siempre len(resultados) + 1.
+            # Así evitamos que el estado de Firestore deje al botón
+            # bloqueado por una incoherencia entre jornada y resultados.
+            siguiente_jornada = len(resultados_guardados) + 1
+
+            if siguiente_jornada <= 7:
+                st.info(
+                    f"🎮 La partida está en curso. "
+                    f"La siguiente jornada disponible es la **Jornada {siguiente_jornada}**."
                 )
 
-                ultima = resultados_guardados[jornada_actual - 1]
+                if st.button(
+                    f"▶️ SIMULAR JORNADA {siguiente_jornada}",
+                    use_container_width=True,
+                    key=f"simular_jornada_{siguiente_jornada}",
+                ):
+                    partidos = torneo["jornadas"][siguiente_jornada - 1]
+                    resultados = simular_jornada(partidos)
+                    puntos = {}
+
+                    # Recargamos la sala justo antes de calcular los puntos,
+                    # para usar las alineaciones guardadas más recientes.
+                    sala_para_puntos = obtener_sala(codigo) or sala
+                    jugadores_sala_actual = sala_para_puntos.get("jugadores") or {}
+
+                    for pid, jugador in jugadores_sala_actual.items():
+                        equipo_fantasy = jugador.get("equipo") or []
+                        puntos_jugador, _ = puntos_de_jornada(
+                            resultados,
+                            equipo_fantasy,
+                        )
+                        puntos[pid] = sum(puntos_jugador.values())
+
+                    torneo["resultados"].append(resultados)
+
+                    # Guardamos primero los resultados.
+                    guardar_torneo(
+                        codigo,
+                        torneo,
+                        siguiente_jornada,
+                    )
+
+                    # Después actualizamos los puntos de los jugadores.
+                    guardar_resultado_jornada(
+                        codigo,
+                        siguiente_jornada,
+                        puntos,
+                    )
+                    st.success(
+                        f"Jornada {siguiente_jornada} simulada correctamente."
+                    )
+                    st.rerun()
+
+            else:
+                st.success("🏆 TORNEO TERMINADO.")
+
+            # Mostrar resultados de la última jornada ya jugada.
+            if resultados_guardados:
+                ultima = resultados_guardados[-1]
+                st.subheader(
+                    f"📋 Resultado de la Jornada {len(resultados_guardados)}"
+                )
                 for partido in ultima:
                     st.write(
                         f"**{partido['equipo_a']} {partido['goles_a']} - "
                         f"{partido['goles_b']} {partido['equipo_b']}**"
                     )
-
-                if jornada_actual < 7:
-                    if st.button(
-                        f"▶️ SIMULAR JORNADA {jornada_actual + 1}",
-                        use_container_width=True,
-                    ):
-                        partidos = torneo["jornadas"][jornada_actual]
-                        resultados = simular_jornada(partidos)
-                        puntos = {}
-
-                        for pid, jugador in jugadores_sala.items():
-                            equipo_fantasy = jugador.get("equipo") or []
-                            puntos_jugador, _ = puntos_de_jornada(
-                                resultados, equipo_fantasy
-                            )
-                            puntos[pid] = sum(puntos_jugador.values())
-
-                        # Guardamos los nuevos resultados en el torneo.
-                        torneo["resultados"].append(resultados)
-                        guardar_torneo(
-                            codigo,
-                            torneo,
-                            jornada_actual + 1,
-                        )
-
-                        guardar_resultado_jornada(
-                            codigo,
-                            jornada_actual + 1,
-                            puntos,
-                        )
-                        st.rerun()
-                else:
-                    st.success("🏆 TORNEO TERMINADO.")
-
-            else:
-                # Jornada pendiente de simular.
-                if jornada_actual == 0:
-                    st.info("La partida todavía no ha comenzado.")
-                else:
-                    if st.button(
-                        f"▶️ SIMULAR JORNADA {jornada_actual}",
-                        use_container_width=True,
-                    ):
-                        partidos = torneo["jornadas"][jornada_actual - 1]
-                        resultados = simular_jornada(partidos)
-                        puntos = {}
-
-                        for pid, jugador in jugadores_sala.items():
-                            equipo_fantasy = jugador.get("equipo") or []
-                            puntos_jugador, _ = puntos_de_jornada(
-                                resultados, equipo_fantasy
-                            )
-                            puntos[pid] = sum(puntos_jugador.values())
-
-                        torneo["resultados"].append(resultados)
-                        guardar_torneo(codigo, torneo, jornada_actual)
-                        guardar_resultado_jornada(
-                            codigo,
-                            jornada_actual,
-                            puntos,
-                        )
-                        st.rerun()
 
         st.divider()
         st.header("🏆 CLASIFICACIÓN")
