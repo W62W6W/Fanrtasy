@@ -1,21 +1,14 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
-    crear_sala,
     obtener_sala,
     unirse_sala,
     guardar_equipo,
+    guardar_cambio_equipo,
     marcar_listo,
-    abrir_seleccion,
-    cerrar_seleccion,
-    todos_jugadores_listos,
-    iniciar_partida,
-    guardar_torneo,
     obtener_torneo,
-    guardar_resultado_jornada,
 )
 from datos import jugadores
-from simulador import generar_jornadas, simular_jornada
 from fantasy import calcular_fantasy, calcular_desgloses_partido
 
 # ============================================================
@@ -207,7 +200,6 @@ def mostrar_alineacion(equipo, titulo="TU ALINEACIÓN"):
 def limpiar_sesion():
     for clave in [
         "rol", "codigo_sala", "player_id", "nombre_usuario",
-        "admin_id", "admin_nombre"
     ]:
         st.session_state.pop(clave, None)
 
@@ -271,16 +263,13 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-if "admin_id" not in st.session_state:
-    st.session_state.admin_id = None
-
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
 # Mientras un usuario está dentro de una sala, la pantalla se
 # actualiza cada 3 segundos para detectar nuevos jugadores,
 # cambios del administrador, jugadores listos y resultados.
-if st.session_state.get("rol") in ("admin", "player"):
+if st.session_state.get("rol") == "player":
     st_autorefresh(
         interval=3000,
         limit=None,
@@ -288,67 +277,48 @@ if st.session_state.get("rol") in ("admin", "player"):
     )
 
 # ============================================================
-# PANTALLA INICIAL
+# PANTALLA INICIAL — SOLO JUGADORES
 # ============================================================
 
 if not st.session_state.rol:
     st.title("⚽ WORLD CUP FANTASY")
     st.subheader("Multijugador")
 
-    c1, c2 = st.columns(2)
+    st.markdown(
+        '<div class="box"><div class="big">👤 Unirse a sala</div>'
+        '<div class="small">Entra con el código que te dé el administrador.</div></div>',
+        unsafe_allow_html=True,
+    )
 
-    with c1:
-        st.markdown(
-            '<div class="box"><div class="big">👑 Crear sala</div>'
-            '<div class="small">Eres el administrador y controlas la partida.</div></div>',
-            unsafe_allow_html=True,
-        )
-        nombre_admin = st.text_input(
-            "Nombre del administrador",
-            key="nombre_admin_inicio",
-        )
-        if st.button("CREAR SALA", use_container_width=True):
-            if not nombre_admin.strip():
-                st.error("Escribe tu nombre.")
-            else:
-                codigo, admin_id = crear_sala(nombre_admin.strip())
-                st.session_state.rol = "admin"
-                st.session_state.codigo_sala = codigo
-                st.session_state.admin_id = admin_id
-                st.session_state.admin_nombre = nombre_admin.strip()
+    codigo_inicio = st.text_input(
+        "Código de sala",
+        max_chars=6,
+        key="codigo_inicio",
+    ).strip().upper()
+    nombre_inicio = st.text_input(
+        "Tu nombre",
+        key="nombre_inicio",
+    )
+
+    if st.button("UNIRME A LA SALA", use_container_width=True):
+        if not codigo_inicio or not nombre_inicio.strip():
+            st.error("Escribe el código y tu nombre.")
+        else:
+            ok, mensaje, player_id = unirse_sala(
+                codigo_inicio,
+                nombre_inicio.strip(),
+            )
+            if ok:
+                st.session_state.rol = "player"
+                st.session_state.codigo_sala = codigo_inicio
+                st.session_state.player_id = player_id
+                st.session_state.nombre_usuario = nombre_inicio.strip()
                 st.rerun()
-
-    with c2:
-        st.markdown(
-            '<div class="box"><div class="big">👤 Unirse a sala</div>'
-            '<div class="small">Entra con el código que te dé el administrador.</div></div>',
-            unsafe_allow_html=True,
-        )
-        codigo = st.text_input(
-            "Código de sala",
-            max_chars=6,
-            key="codigo_inicio",
-        ).strip().upper()
-        nombre = st.text_input(
-            "Tu nombre",
-            key="nombre_inicio",
-        )
-        if st.button("UNIRME A LA SALA", use_container_width=True):
-            if not codigo or not nombre.strip():
-                st.error("Escribe el código y tu nombre.")
             else:
-                ok, mensaje, player_id = unirse_sala(codigo, nombre.strip())
-                if ok:
-                    st.session_state.rol = "player"
-                    st.session_state.codigo_sala = codigo
-                    st.session_state.player_id = player_id
-                    st.session_state.nombre_usuario = nombre.strip()
-                    st.rerun()
-                else:
-                    st.error(mensaje or "No se pudo entrar.")
+                st.error(mensaje or "No se pudo entrar.")
 
     st.divider()
-    st.caption("1 administrador + hasta 30 jugadores.")
+    st.caption("🎮 Página de jugadores · El administrador controla la partida.")
     st.stop()
 
 # ============================================================
@@ -363,230 +333,6 @@ if not sala:
     if st.button("VOLVER AL INICIO"):
         limpiar_sesion()
         st.rerun()
-    st.stop()
-
-# ============================================================
-# ADMINISTRADOR
-# ============================================================
-
-if st.session_state.rol == "admin":
-    st.title("👑 PANEL DEL ADMINISTRADOR")
-    st.markdown(
-        f'<div class="box"><div class="small">CÓDIGO DE SALA</div>'
-        f'<div class="big">{codigo}</div></div>',
-        unsafe_allow_html=True,
-    )
-
-    jugadores_sala = sala.get("jugadores") or {}
-    torneo = obtener_torneo(codigo)
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.metric("👥 JUGADORES", f"{len(jugadores_sala)} / {MAX_JUGADORES}")
-    with c2:
-        st.metric("🏟️ JORNADA", sala.get("jornada_actual", 0))
-    with c3:
-        estado = sala.get("estado", "esperando")
-        st.metric("ESTADO", estado.upper())
-
-    st.divider()
-    st.header("👥 JUGADORES")
-
-    if jugadores_sala:
-        for pid, jugador in jugadores_sala.items():
-            equipo = jugador.get("equipo") or []
-            estado_listo = "✅ LISTO" if jugador.get("listo") else "⏳ PENDIENTE"
-            st.write(
-                f"**{jugador.get('nombre','Sin nombre')}** — "
-                f"{estado_listo} — {len(equipo)}/11 jugadores"
-            )
-    else:
-        st.info("Todavía no hay jugadores en la sala.")
-
-    st.divider()
-
-    # Crear el calendario una sola vez.
-    if torneo is None:
-        st.header("🏟️ Preparar torneo")
-        st.write("Hay 8 selecciones y 7 jornadas.")
-        if st.button("GENERAR TORNEO", use_container_width=True):
-            calendario = {
-                "jornadas": generar_jornadas(),
-                "resultados": [],
-            }
-            guardar_torneo(codigo, calendario, 0)
-            st.success("Torneo generado.")
-            st.rerun()
-    else:
-        st.header("🎮 CONTROL DE LA PARTIDA")
-
-        seleccion_abierta = bool(sala.get("seleccion_abierta", False))
-        jornada_actual = int(sala.get("jornada_actual", 0))
-
-        # ========================================================
-        # FLUJO DE LA PARTIDA
-        # ========================================================
-        # 1) Abrir selección
-        # 2) Todos los jugadores completan y pulsan LISTO
-        # 3) El admin pulsa EMPEZAR PARTIDA
-        # 4) El admin pulsa SIMULAR JORNADA 1, 2, 3... 7
-        # Las alineaciones NO se vuelven a abrir.
-
-        seleccion_abierta = bool(sala.get("seleccion_abierta", False))
-        jornada_actual = int(sala.get("jornada_actual", 0))
-        resultados_guardados = torneo.get("resultados") or []
-
-        # ---------------- PREPARACIÓN ----------------
-        if jornada_actual == 0:
-            if not seleccion_abierta:
-                if st.button(
-                    "🔓 ABRIR SELECCIÓN",
-                    use_container_width=True,
-                ):
-                    abrir_seleccion(codigo)
-                    st.rerun()
-            else:
-                st.success("🟢 SELECCIÓN ABIERTA")
-
-                todos_listos = todos_jugadores_listos(sala)
-                jugadores_completos = all(
-                    len(j.get("equipo") or []) == 11
-                    for j in jugadores_sala.values()
-                ) if jugadores_sala else False
-
-                if todos_listos and jugadores_completos:
-                    st.success("✅ TODOS LOS JUGADORES ESTÁN LISTOS.")
-                elif not jugadores_sala:
-                    st.warning("Todavía no hay jugadores.")
-                else:
-                    pendientes = sum(
-                        1 for j in jugadores_sala.values()
-                        if not j.get("listo", False)
-                    )
-                    incompletos = sum(
-                        1 for j in jugadores_sala.values()
-                        if len(j.get("equipo") or []) != 11
-                    )
-                    st.warning(
-                        f"Faltan {pendientes} jugador(es) por marcar LISTO "
-                        f"y {incompletos} por completar la alineación."
-                    )
-
-                # Este botón es el equivalente a "EMPEZAR SELECCIÓN":
-                # ahora inicia oficialmente la partida.
-                if st.button(
-                    "🚀 EMPEZAR PARTIDA",
-                    disabled=not (todos_listos and jugadores_completos),
-                    use_container_width=True,
-                ):
-                    ok, mensaje = iniciar_partida(codigo)
-                    if not ok:
-                        st.error(mensaje)
-                    else:
-                        st.success("🚀 ¡PARTIDA INICIADA!")
-                        st.rerun()
-
-                st.caption(
-                    "Una vez iniciada la partida, las alineaciones quedan "
-                    "bloqueadas y el administrador controla las jornadas."
-                )
-
-        # ---------------- JORNADAS ----------------
-        elif sala.get("estado") in ("jugando", "resultado", "final"):
-            # La jornada que toca simular es siempre resultados + 1.
-            # Así no dependemos de que jornada_actual se haya quedado
-            # desfasada en una actualización de la página.
-            siguiente_jornada = len(resultados_guardados) + 1
-
-            if siguiente_jornada <= 7:
-                if siguiente_jornada == 1:
-                    st.success(
-                        "🚀 PARTIDA INICIADA. Las alineaciones están bloqueadas."
-                    )
-                else:
-                    st.success(
-                        f"Jornada {siguiente_jornada - 1} terminada. "
-                        "Las alineaciones permanecen bloqueadas."
-                    )
-
-                st.header(f"🏟️ JORNADA {siguiente_jornada}")
-
-                if st.button(
-                    f"▶️ SIMULAR JORNADA {siguiente_jornada}",
-                    key=f"simular_jornada_{siguiente_jornada}",
-                    use_container_width=True,
-                ):
-                    partidos = torneo["jornadas"][siguiente_jornada - 1]
-                    resultados = simular_jornada(partidos)
-                    puntos = {}
-
-                    # Puntos de cada usuario para ESTA jornada.
-                    for pid, jugador in jugadores_sala.items():
-                        equipo_fantasy = jugador.get("equipo") or []
-                        puntos_jugador, _ = puntos_de_jornada(
-                            resultados,
-                            equipo_fantasy,
-                        )
-                        puntos[pid] = sum(puntos_jugador.values())
-
-                    torneo["resultados"].append(resultados)
-
-                    # jornada_actual representa la última jornada terminada.
-                    guardar_torneo(
-                        codigo,
-                        torneo,
-                        siguiente_jornada,
-                    )
-
-                    guardar_resultado_jornada(
-                        codigo,
-                        siguiente_jornada,
-                        puntos,
-                    )
-                    st.rerun()
-
-                # Mostrar la última jornada ya jugada.
-                if resultados_guardados:
-                    ultima = resultados_guardados[-1]
-                    st.subheader(
-                        f"📋 Resultado de la jornada {len(resultados_guardados)}"
-                    )
-                    for partido in ultima:
-                        st.write(
-                            f"**{partido['equipo_a']} {partido['goles_a']} - "
-                            f"{partido['goles_b']} {partido['equipo_b']}**"
-                        )
-
-            else:
-                st.success("🏆 TORNEO TERMINADO")
-                st.write("Se han disputado las 7 jornadas.")
-
-        st.divider()
-        st.header("🏆 CLASIFICACIÓN")
-
-        sala_actualizada = obtener_sala(codigo) or sala
-        ranking = sorted(
-            (sala_actualizada.get("jugadores") or {}).items(),
-            key=lambda x: float(x[1].get("puntos_totales", 0)),
-            reverse=True,
-        )
-
-        if ranking:
-            st.markdown("### 🏆 CLASIFICACIÓN DE LA SALA")
-            for i, (_, jugador) in enumerate(ranking, 1):
-                puntos_total = float(jugador.get("puntos_totales", 0))
-                puntos_jornada = float(jugador.get("puntos_jornada", 0))
-                st.write(
-                    f"**{i}. {jugador.get('nombre','')}** — "
-                    f"⭐ {puntos_total:.2f} puntos "
-                    f"(esta jornada: {puntos_jornada:.2f})"
-                )
-
-    st.divider()
-    if st.button("🚪 SALIR DEL PANEL"):
-        limpiar_sesion()
-        st.rerun()
-
     st.stop()
 
 # ============================================================
@@ -771,6 +517,61 @@ if seleccion_abierta and not ya_seleccionado:
                     else:
                         st.rerun()
 
+
+# ============================================================
+# QUITAR JUGADORES DURANTE LA SELECCIÓN
+# ============================================================
+
+# Mientras la selección está abierta y la plantilla aún no se ha
+# guardado definitivamente, el jugador puede quitar fichajes.
+# Al quitarlo, el presupuesto disponible aumenta automáticamente
+# porque se vuelve a calcular sobre los 540M.
+if seleccion_abierta and not ya_seleccionado and mi_equipo:
+    st.divider()
+    st.subheader("🗑️ QUITAR JUGADORES")
+
+    st.caption(
+        "Puedes quitar un jugador que hayas comprado. "
+        "El dinero vuelve automáticamente a tu presupuesto."
+    )
+
+    for pid in list(mi_equipo):
+        jugador_quitar = jugadores[pid]
+        col_info, col_quitar = st.columns([4, 1])
+
+        with col_info:
+            st.write(
+                f"**{jugador_quitar['nombre']}** · "
+                f"{NOMBRES_POSICION.get(jugador_quitar.get('posicion',''), jugador_quitar.get('posicion',''))} · "
+                f"💰 {dinero(jugador_quitar.get('precio', 0))}"
+            )
+
+        with col_quitar:
+            if st.button(
+                "🗑️ QUITAR",
+                key=f"quitar_jugador_{pid}",
+                use_container_width=True,
+            ):
+                nuevo_equipo = [x for x in mi_equipo if x != pid]
+                nuevo_valor = valor_equipo(nuevo_equipo)
+                nuevo_restante = PRESUPUESTO - nuevo_valor
+
+                ok, mensaje = guardar_equipo(
+                    codigo,
+                    player_id,
+                    nuevo_equipo,
+                    nuevo_restante,
+                )
+
+                if not ok:
+                    st.error(mensaje)
+                else:
+                    st.success(
+                        f"Se ha quitado a {jugador_quitar['nombre']}. "
+                        f"Has recuperado {dinero(jugador_quitar.get('precio', 0))}."
+                    )
+                    st.rerun()
+
 # ============================================================
 # ALINEACIÓN YA GUARDADA: BLOQUEADA
 # ============================================================
@@ -800,6 +601,96 @@ elif ya_seleccionado:
         st.success("✅ Ya estás marcado como LISTO.")
 
     st.metric("💰 VALOR DE PLANTILLA", dinero(valor_equipo(mi_equipo)))
+
+
+# ============================================================
+# CAMBIOS DESPUÉS DE CADA JORNADA
+# ============================================================
+
+if estado == "resultado" and len(mi_equipo) == 11:
+    st.divider()
+    st.header("🔄 CAMBIOS DE PLANTILLA")
+
+    cambios_usados = int(yo.get("cambios_jornada", 0))
+    cambios_restantes = max(0, 3 - cambios_usados)
+
+    st.info(
+        f"Puedes hacer hasta **3 cambios** después de esta jornada. "
+        f"Te quedan **{cambios_restantes}**."
+    )
+
+    if cambios_restantes > 0:
+        col_vender, col_comprar = st.columns(2)
+
+        with col_vender:
+            pid_venta = st.selectbox(
+                "🔴 VENDER JUGADOR",
+                mi_equipo,
+                format_func=lambda pid: (
+                    f"{jugadores[pid]['nombre']} · "
+                    f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
+                    f"{dinero(jugadores[pid].get('precio', 0))}"
+                ),
+                key=f"venta_jornada_{jornada}_{cambios_usados}",
+            )
+
+        posicion_venta = jugadores[pid_venta].get("posicion")
+
+        candidatos = [
+            pid for pid, jugador in jugadores.items()
+            if pid not in mi_equipo
+            and jugador.get("posicion") == posicion_venta
+        ]
+
+        with col_comprar:
+            if candidatos:
+                pid_compra = st.selectbox(
+                    "🟢 COMPRAR JUGADOR",
+                    candidatos,
+                    format_func=lambda pid: (
+                        f"{jugadores[pid]['nombre']} · "
+                        f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
+                        f"{dinero(jugadores[pid].get('precio', 0))}"
+                    ),
+                    key=f"compra_jornada_{jornada}_{cambios_usados}",
+                )
+            else:
+                pid_compra = None
+                st.warning("No hay sustitutos disponibles para esa posición.")
+
+        if pid_compra:
+            equipo_nuevo = list(mi_equipo)
+            equipo_nuevo.remove(pid_venta)
+            equipo_nuevo.append(pid_compra)
+
+            valor_nuevo = valor_equipo(equipo_nuevo)
+            presupuesto_nuevo = PRESUPUESTO - valor_nuevo
+
+            st.metric(
+                "💰 PRESUPUESTO DESPUÉS DEL CAMBIO",
+                dinero(presupuesto_nuevo),
+            )
+
+            if presupuesto_nuevo < 0:
+                st.error("No puedes superar los 540M de presupuesto.")
+            elif st.button(
+                "🔄 CONFIRMAR CAMBIO",
+                key=f"confirmar_cambio_{jornada}_{cambios_usados}",
+                use_container_width=True,
+            ):
+                ok, mensaje = guardar_cambio_equipo(
+                    codigo,
+                    player_id,
+                    equipo_nuevo,
+                    presupuesto_nuevo,
+                )
+                if not ok:
+                    st.error(mensaje)
+                else:
+                    st.success("✅ Cambio realizado correctamente.")
+                    st.rerun()
+    else:
+        st.success("✅ Ya has utilizado los 3 cambios disponibles en esta jornada.")
 
 # ============================================================
 # PARTIDA / RESULTADOS

@@ -30,8 +30,8 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "POR",
         "precio": 55000000,
-        "ataque": 6,
-        "defensa": 9
+        "ataque": 5,
+        "defensa": 8
     },
 
     "saliba": {
@@ -40,7 +40,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 95000000,
         "ataque": 7,
-        "defensa": 10
+        "defensa": 9
     },
 
     "konate": {
@@ -48,7 +48,7 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "DEF",
         "precio": 50000000,
-        "ataque": 5,
+        "ataque": 7,
         "defensa": 8
     },
 
@@ -57,7 +57,7 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "DEF",
         "precio": 65000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 8
     },
 
@@ -67,7 +67,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 60000000,
         "ataque": 7,
-        "defensa": 9
+        "defensa": 8
     },
 
     "tchouameni": {
@@ -76,7 +76,7 @@ jugadores = {
         "posicion": "MED",
         "precio": 75000000,
         "ataque": 7,
-        "defensa": 9
+        "defensa": 7
     },
 
     "rabiot": {
@@ -85,7 +85,7 @@ jugadores = {
         "posicion": "MED",
         "precio": 30000000,
         "ataque": 6,
-        "defensa": 7
+        "defensa": 6
     },
 
     "olise": {
@@ -93,8 +93,8 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "MED",
         "precio": 85000000,
-        "ataque": 9,
-        "defensa": 6
+        "ataque": 8,
+        "defensa": 7
     },
 
     "dembele": {
@@ -102,8 +102,8 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "DEL",
         "precio": 120000000,
-        "ataque": 10,
-        "defensa": 5
+        "ataque": 9,
+        "defensa": 7
     },
 
     "mbappe": {
@@ -112,7 +112,7 @@ jugadores = {
         "posicion": "DEL",
         "precio": 200000000,
         "ataque": 10,
-        "defensa": 5
+        "defensa": 8
     },
 
     "doue": {
@@ -120,8 +120,8 @@ jugadores = {
         "equipo": "Francia",
         "posicion": "DEL",
         "precio": 75000000,
-        "ataque": 9,
-        "defensa": 4
+        "ataque": 8,
+        "defensa": 5
     },
 
 
@@ -135,7 +135,7 @@ jugadores = {
         "posicion": "POR",
         "precio": 45000000,
         "ataque": 4,
-        "defensa": 8
+        "defensa": 7
     },
 
     "carvajal": {
@@ -143,8 +143,8 @@ jugadores = {
         "equipo": "España",
         "posicion": "DEF",
         "precio": 15000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 4,
+        "defensa": 4
     },
 
     "le_normand": {
@@ -152,8 +152,8 @@ jugadores = {
         "equipo": "España",
         "posicion": "DEF",
         "precio": 35000000,
-        "ataque": 5,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 7
     },
 
     "cubarsi": {
@@ -170,8 +170,8 @@ jugadores = {
         "equipo": "España",
         "posicion": "DEF",
         "precio": 55000000,
-        "ataque": 9,
-        "defensa": 7
+        "ataque": 7,
+        "defensa": 8
     },
 
     "rodri": {
@@ -179,8 +179,8 @@ jugadores = {
         "equipo": "España",
         "posicion": "MED",
         "precio": 130000000,
-        "ataque": 9,
-        "defensa": 10
+        "ataque": 8,
+        "defensa": 8
     },
 
     "pedri": {
@@ -188,7 +188,7 @@ jugadores = {
         "equipo": "España",
         "posicion": "MED",
         "precio": 110000000,
-        "ataque": 9,
+        "ataque": 8,
         "defensa": 7
     },
 
@@ -197,7 +197,7 @@ jugadores = {
         "equipo": "España",
         "posicion": "MED",
         "precio": 55000000,
-        "ataque": 8,
+        "ataque": 7,
         "defensa": 7
     },
 
@@ -207,7 +207,7 @@ jugadores = {
         "posicion": "DEL",
         "precio": 190000000,
         "ataque": 10,
-        "defensa": 5
+        "defensa": 8
     },
 
     "nico": {
@@ -216,7 +216,7 @@ jugadores = {
         "posicion": "DEL",
         "precio": 85000000,
         "ataque": 9,
-        "defensa": 5
+        "defensa": 6
     },
 
     "morata": {
@@ -224,8 +224,8 @@ jugadores = {
         "equipo": "España",
         "posicion": "DEL",
         "precio": 25000000,
-        "ataque": 7,
-        "defensa": 3
+        "ataque": 5,
+        "defensa": 4
     },
 
 
@@ -239,7 +239,7 @@ jugadores = {
         "posicion": "POR",
         "precio": 60000000,
         "ataque": 5,
-        "defensa": 10
+        "defensa": 8
     },
 
     "romero": {
@@ -247,8 +247,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "DEF",
         "precio": 65000000,
-        "ataque": 6,
-        "defensa": 10
+        "ataque": 7,
+        "defensa": 8
     },
 
     "lisandro": {
@@ -257,7 +257,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 45000000,
         "ataque": 6,
-        "defensa": 9
+        "defensa": 7
     },
 
     "senesi": {
@@ -266,7 +266,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 30000000,
         "ataque": 6,
-        "defensa": 8
+        "defensa": 7
     },
 
     "molina": {
@@ -274,8 +274,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "DEF",
         "precio": 35000000,
-        "ataque": 8,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 7
     },
 
     "paredes": {
@@ -283,8 +283,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "MED",
         "precio": 30000000,
-        "ataque": 7,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 6
     },
 
     "enzo": {
@@ -292,8 +292,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "MED",
         "precio": 85000000,
-        "ataque": 9,
-        "defensa": 8
+        "ataque": 8,
+        "defensa": 7
     },
 
     "mac_allister": {
@@ -301,8 +301,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "MED",
         "precio": 90000000,
-        "ataque": 9,
-        "defensa": 8
+        "ataque": 8,
+        "defensa": 7
     },
 
     "messi": {
@@ -310,8 +310,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "DEL",
         "precio": 70000000,
-        "ataque": 10,
-        "defensa": 4
+        "ataque": 8,
+        "defensa": 5
     },
 
     "julian_alvarez": {
@@ -319,8 +319,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "DEL",
         "precio": 105000000,
-        "ataque": 10,
-        "defensa": 5
+        "ataque": 9,
+        "defensa": 6
     },
 
     "lautaro": {
@@ -328,8 +328,8 @@ jugadores = {
         "equipo": "Argentina",
         "posicion": "DEL",
         "precio": 100000000,
-        "ataque": 10,
-        "defensa": 4
+        "ataque": 9,
+        "defensa": 6
     },
 
 
@@ -342,8 +342,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "POR",
         "precio": 60000000,
-        "ataque": 4,
-        "defensa": 10
+        "ataque": 5,
+        "defensa": 8
     },
 
     "debast": {
@@ -352,7 +352,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 35000000,
         "ataque": 6,
-        "defensa": 8
+        "defensa": 7
     },
 
     "theate": {
@@ -361,7 +361,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 30000000,
         "ataque": 6,
-        "defensa": 8
+        "defensa": 7
     },
 
     "de_winter": {
@@ -369,8 +369,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "DEF",
         "precio": 25000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 6
     },
 
     "castagne": {
@@ -378,8 +378,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "DEF",
         "precio": 15000000,
-        "ataque": 6,
-        "defensa": 7
+        "ataque": 4,
+        "defensa": 4
     },
 
     "onana": {
@@ -388,7 +388,7 @@ jugadores = {
         "posicion": "MED",
         "precio": 55000000,
         "ataque": 7,
-        "defensa": 9
+        "defensa": 7
     },
 
     "tielemans": {
@@ -396,8 +396,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "MED",
         "precio": 45000000,
-        "ataque": 8,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 6
     },
 
     "de_ketelaere": {
@@ -405,8 +405,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "MED",
         "precio": 55000000,
-        "ataque": 9,
-        "defensa": 6
+        "ataque": 7,
+        "defensa": 7
     },
 
     "doku": {
@@ -414,8 +414,8 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "DEL",
         "precio": 80000000,
-        "ataque": 10,
-        "defensa": 5
+        "ataque": 9,
+        "defensa": 6
     },
 
     "trossard": {
@@ -423,7 +423,7 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "DEL",
         "precio": 45000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -432,7 +432,7 @@ jugadores = {
         "equipo": "Bélgica",
         "posicion": "DEL",
         "precio": 35000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -446,8 +446,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "POR",
         "precio": 55000000,
-        "ataque": 4,
-        "defensa": 9
+        "ataque": 5,
+        "defensa": 8
     },
 
     "guehi": {
@@ -455,8 +455,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEF",
         "precio": 60000000,
-        "ataque": 6,
-        "defensa": 9
+        "ataque": 7,
+        "defensa": 8
     },
 
     "konsa": {
@@ -464,7 +464,7 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEF",
         "precio": 50000000,
-        "ataque": 6,
+        "ataque": 7,
         "defensa": 8
     },
 
@@ -473,8 +473,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEF",
         "precio": 25000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 6
     },
 
     "walker": {
@@ -482,8 +482,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEF",
         "precio": 20000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 6
     },
 
     "rice": {
@@ -492,7 +492,7 @@ jugadores = {
         "posicion": "MED",
         "precio": 110000000,
         "ataque": 8,
-        "defensa": 10
+        "defensa": 7
     },
 
     "bellingham": {
@@ -500,8 +500,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "MED",
         "precio": 160000000,
-        "ataque": 10,
-        "defensa": 9
+        "ataque": 8,
+        "defensa": 8
     },
 
     "eze": {
@@ -509,8 +509,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "MED",
         "precio": 60000000,
-        "ataque": 9,
-        "defensa": 5
+        "ataque": 7,
+        "defensa": 7
     },
 
     "saka": {
@@ -518,8 +518,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEL",
         "precio": 120000000,
-        "ataque": 10,
-        "defensa": 5
+        "ataque": 9,
+        "defensa": 7
     },
 
     "gordon": {
@@ -527,7 +527,7 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEL",
         "precio": 75000000,
-        "ataque": 9,
+        "ataque": 8,
         "defensa": 5
     },
 
@@ -536,8 +536,8 @@ jugadores = {
         "equipo": "Inglaterra",
         "posicion": "DEL",
         "precio": 95000000,
-        "ataque": 10,
-        "defensa": 4
+        "ataque": 9,
+        "defensa": 6
     },
 
 
@@ -551,7 +551,7 @@ jugadores = {
         "posicion": "POR",
         "precio": 5000000,
         "ataque": 3,
-        "defensa": 7
+        "defensa": 5
     },
 
     "ajer": {
@@ -559,8 +559,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEF",
         "precio": 25000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 6
     },
 
     "ostigard": {
@@ -568,8 +568,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEF",
         "precio": 15000000,
-        "ataque": 5,
-        "defensa": 7
+        "ataque": 4,
+        "defensa": 4
     },
 
     "ryerson": {
@@ -577,8 +577,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEF",
         "precio": 40000000,
-        "ataque": 8,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 7
     },
 
     "wolfe": {
@@ -586,8 +586,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEF",
         "precio": 12000000,
-        "ataque": 6,
-        "defensa": 7
+        "ataque": 4,
+        "defensa": 4
     },
 
     "berge": {
@@ -595,8 +595,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "MED",
         "precio": 30000000,
-        "ataque": 7,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 6
     },
 
     "aursnes": {
@@ -604,8 +604,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "MED",
         "precio": 25000000,
-        "ataque": 7,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 5
     },
 
     "odegaard": {
@@ -613,8 +613,8 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "MED",
         "precio": 90000000,
-        "ataque": 10,
-        "defensa": 6
+        "ataque": 8,
+        "defensa": 7
     },
 
     "nusa": {
@@ -622,7 +622,7 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEL",
         "precio": 45000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -631,7 +631,7 @@ jugadores = {
         "equipo": "Noruega",
         "posicion": "DEL",
         "precio": 40000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -641,7 +641,7 @@ jugadores = {
         "posicion": "DEL",
         "precio": 200000000,
         "ataque": 10,
-        "defensa": 5
+        "defensa": 8
     },
 
 
@@ -654,8 +654,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "POR",
         "precio": 35000000,
-        "ataque": 3,
-        "defensa": 9
+        "ataque": 4,
+        "defensa": 7
     },
 
     "hakimi": {
@@ -663,7 +663,7 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEF",
         "precio": 85000000,
-        "ataque": 10,
+        "ataque": 7,
         "defensa": 9
     },
 
@@ -672,8 +672,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEF",
         "precio": 35000000,
-        "ataque": 7,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 7
     },
 
     "chadi_riad": {
@@ -682,7 +682,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 20000000,
         "ataque": 5,
-        "defensa": 8
+        "defensa": 6
     },
 
     "el_ouahdi": {
@@ -690,8 +690,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEF",
         "precio": 18000000,
-        "ataque": 7,
-        "defensa": 7
+        "ataque": 4,
+        "defensa": 4
     },
 
     "amrabat": {
@@ -700,7 +700,7 @@ jugadores = {
         "posicion": "MED",
         "precio": 30000000,
         "ataque": 6,
-        "defensa": 9
+        "defensa": 6
     },
 
     "el_khannouss": {
@@ -708,7 +708,7 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "MED",
         "precio": 45000000,
-        "ataque": 8,
+        "ataque": 6,
         "defensa": 6
     },
 
@@ -717,8 +717,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "MED",
         "precio": 50000000,
-        "ataque": 9,
-        "defensa": 6
+        "ataque": 7,
+        "defensa": 7
     },
 
     "brahim": {
@@ -726,8 +726,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEL",
         "precio": 65000000,
-        "ataque": 9,
-        "defensa": 4
+        "ataque": 8,
+        "defensa": 5
     },
 
     "rahimi": {
@@ -735,7 +735,7 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEL",
         "precio": 25000000,
-        "ataque": 8,
+        "ataque": 5,
         "defensa": 4
     },
 
@@ -744,8 +744,8 @@ jugadores = {
         "equipo": "Marruecos",
         "posicion": "DEL",
         "precio": 18000000,
-        "ataque": 7,
-        "defensa": 3
+        "ataque": 4,
+        "defensa": 4
     },
 
 
@@ -758,8 +758,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "POR",
         "precio": 65000000,
-        "ataque": 4,
-        "defensa": 10
+        "ataque": 5,
+        "defensa": 8
     },
 
     "akanji": {
@@ -768,7 +768,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 45000000,
         "ataque": 6,
-        "defensa": 9
+        "defensa": 7
     },
 
     "elvedi": {
@@ -777,7 +777,7 @@ jugadores = {
         "posicion": "DEF",
         "precio": 25000000,
         "ataque": 5,
-        "defensa": 8
+        "defensa": 6
     },
 
     "schar": {
@@ -785,8 +785,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "DEF",
         "precio": 20000000,
-        "ataque": 6,
-        "defensa": 8
+        "ataque": 5,
+        "defensa": 6
     },
 
     "muheim": {
@@ -794,8 +794,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "DEF",
         "precio": 12000000,
-        "ataque": 7,
-        "defensa": 7
+        "ataque": 4,
+        "defensa": 4
     },
 
     "jashari": {
@@ -803,8 +803,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "MED",
         "precio": 40000000,
-        "ataque": 7,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 6
     },
 
     "zakaria": {
@@ -812,8 +812,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "MED",
         "precio": 40000000,
-        "ataque": 7,
-        "defensa": 9
+        "ataque": 6,
+        "defensa": 6
     },
 
     "xhaka": {
@@ -821,8 +821,8 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "MED",
         "precio": 35000000,
-        "ataque": 8,
-        "defensa": 8
+        "ataque": 6,
+        "defensa": 6
     },
 
     "ndoye": {
@@ -830,7 +830,7 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "DEL",
         "precio": 45000000,
-        "ataque": 9,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -839,7 +839,7 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "DEL",
         "precio": 35000000,
-        "ataque": 8,
+        "ataque": 7,
         "defensa": 4
     },
 
@@ -848,7 +848,7 @@ jugadores = {
         "equipo": "Suiza",
         "posicion": "DEL",
         "precio": 30000000,
-        "ataque": 8,
+        "ataque": 7,
         "defensa": 4
     }
 }
@@ -926,31 +926,3 @@ def equipos_disponibles():
             for jugador in jugadores.values()
         )
     )
-
-
-# ============================================================
-# FORMATO DE PRECIOS
-# ============================================================
-
-def formato_precio(precio):
-
-    if precio >= 1_000_000_000:
-
-        return f"{precio / 1_000_000_000:.1f}B"
-
-    if precio >= 1_000_000:
-
-        return f"{precio / 1_000_000:.1f}M"
-
-    if precio >= 1_000:
-
-        return f"{precio / 1_000:.0f}K"
-
-    return str(precio)
-
-
-# ============================================================
-# PRESUPUESTO GLOBAL
-# ============================================================
-
-PRESUPUESTO_FANTASY = presupuesto_fantasy()
