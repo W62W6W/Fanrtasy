@@ -631,7 +631,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
                     f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
                     f"{dinero(jugadores[pid].get('precio', 0))}"
                 ),
-                key=f"venta_jornada_{jornada}_{cambios_usados}",
+                key=f"venta_jornada_{jornada_actual}_{cambios_usados}",
             )
 
         posicion_venta = jugadores[pid_venta].get("posicion")
@@ -652,7 +652,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
                         f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
                         f"{dinero(jugadores[pid].get('precio', 0))}"
                     ),
-                    key=f"compra_jornada_{jornada}_{cambios_usados}",
+                    key=f"compra_jornada_{jornada_actual}_{cambios_usados}",
                 )
             else:
                 pid_compra = None
@@ -675,7 +675,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
                 st.error("No puedes superar los 540M de presupuesto.")
             elif st.button(
                 "🔄 CONFIRMAR CAMBIO",
-                key=f"confirmar_cambio_{jornada}_{cambios_usados}",
+                key=f"confirmar_cambio_{jornada_actual}_{cambios_usados}",
                 use_container_width=True,
             ):
                 ok, mensaje = guardar_cambio_equipo(
