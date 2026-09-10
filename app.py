@@ -33,19 +33,19 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
-    .stApp { background: #050505; color: white; }
-    [data-testid="stSidebar"] { background: #080808; }
+    .stApp { background: #070b1f; color: white; }
+    [data-testid="stSidebar"] { background: #0b1030; }
     h1,h2,h3,h4,h5,h6,p,label { color: white !important; }
 
     div[data-baseweb="select"] > div {
-        background: #111 !important;
+        background: #111936 !important;
         color: white !important;
         border: 1px solid #333 !important;
     }
     div[data-baseweb="select"] span { color: white !important; }
 
     .stButton > button {
-        background: #151515 !important;
+        background: #17204a !important;
         color: white !important;
         border: 1px solid #444 !important;
         border-radius: 10px !important;
@@ -53,13 +53,13 @@ st.markdown(
         min-height: 42px !important;
     }
     .stButton > button:hover {
-        background: #222 !important;
+        background: #24306b !important;
         border-color: white !important;
     }
 
     .box {
-        background: linear-gradient(145deg,#171717,#090909);
-        border: 1px solid #333;
+        background: linear-gradient(145deg,#18245a,#0b1030);
+        border: 1px solid #3346a8;
         border-radius: 15px;
         padding: 18px;
         margin-bottom: 12px;
@@ -74,7 +74,7 @@ st.markdown(
         letter-spacing: 1px;
     }
     .player-card {
-        background: linear-gradient(145deg,#171717,#090909);
+        background: linear-gradient(145deg,#18245a,#0b1030);
         border: 1px solid #292929;
         border-radius: 14px;
         padding: 14px;
@@ -90,7 +90,7 @@ st.markdown(
         margin-top: 4px;
     }
     .slot {
-        background: #101010;
+        background: #0f1738;
         border: 1px dashed #444;
         border-radius: 12px;
         padding: 12px;
@@ -746,12 +746,23 @@ if estado in ("jugando", "resultado", "final"):
         # Los puntos de esta jornada se toman de Firebase, donde quedaron
         # guardados en el momento de la simulación. Así un cambio de plantilla
         # posterior NO modifica los puntos que ya ganó el jugador.
+        # Firebase guarda los puntos de CADA jugador en el momento de
+        # simular la jornada. Los leemos de ahí para que un cambio posterior
+        # de plantilla jamás modifique los puntos históricos.
+        resultados_guardados = (
+            (torneo or {}).get("resultados_jornadas") or {}
+        )
+        puntos_guardados = resultados_guardados.get(
+            f"jornada_{jornada}", {}
+        ) or {}
+
         puntos_jornada = {
-            player_id: float(yo.get("puntos_jornada", 0))
+            pid: float(puntos_guardados.get(pid, 0))
+            for pid in mi_equipo
         }
 
-        # El desglose visual se calcula solo para los jugadores que siguen
-        # en la plantilla; los puntos totales de la jornada no se recalculan.
+        # El desglose visual se calcula para los jugadores actuales.
+        # Los puntos que se muestran arriba son siempre los históricos guardados.
         _, detalles = puntos_de_jornada(
             resultados_jornada,
             mi_equipo,
@@ -773,7 +784,7 @@ if estado in ("jugando", "resultado", "final"):
             reverse=True,
         ):
             jugador = jugadores[pid]
-            puntos = float(yo.get("puntos_jornada", 0)) if pid == player_id else 0.0
+            puntos = float(puntos_jornada.get(pid, 0.0))
 
             with st.expander(
                 f"{jugador['nombre']} · ⭐ {puntos:.2f}"
