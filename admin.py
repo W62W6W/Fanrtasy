@@ -150,7 +150,7 @@ if torneo is None:
 else:
     st.header("🎮 CONTROL DE LA PARTIDA")
 
-    if estado == "esperando" and jornada_actual == 0:
+    if estado in ("esperando", "seleccion") and jornada_actual == 0:
         if not seleccion_abierta:
             if st.button("🔓 ABRIR SELECCIÓN", use_container_width=True):
                 abrir_seleccion(codigo)
@@ -232,4 +232,3 @@ st.divider()
 if st.button("🚪 SALIR DEL PANEL"):
     salir()
     st.rerun()
-
