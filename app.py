@@ -33,33 +33,33 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
-    .stApp { background: #070b1f; color: white; }
-    [data-testid="stSidebar"] { background: #0b1030; }
+    .stApp { background: #050b24; color: white; }
+    [data-testid="stSidebar"] { background: #08113a; border-right: 1px solid #2846b8; }
     h1,h2,h3,h4,h5,h6,p,label { color: white !important; }
 
     div[data-baseweb="select"] > div {
-        background: #111936 !important;
+        background: #101a46 !important;
         color: white !important;
-        border: 1px solid #333 !important;
+        border: 1px solid #3b5bd6 !important;
     }
     div[data-baseweb="select"] span { color: white !important; }
 
     .stButton > button {
-        background: #17204a !important;
+        background: linear-gradient(135deg,#2847c7,#182d8c) !important;
         color: white !important;
-        border: 1px solid #444 !important;
+        border: 1px solid #5c75ff !important;
         border-radius: 10px !important;
         font-weight: bold !important;
         min-height: 42px !important;
     }
     .stButton > button:hover {
-        background: #24306b !important;
+        background: linear-gradient(135deg,#3a5cff,#2941b8) !important;
         border-color: white !important;
     }
 
     .box {
-        background: linear-gradient(145deg,#18245a,#0b1030);
-        border: 1px solid #3346a8;
+        background: linear-gradient(145deg,#1b2d75,#0a123d);
+        border: 1px solid #4563e8;
         border-radius: 15px;
         padding: 18px;
         margin-bottom: 12px;
@@ -74,7 +74,7 @@ st.markdown(
         letter-spacing: 1px;
     }
     .player-card {
-        background: linear-gradient(145deg,#18245a,#0b1030);
+        background: linear-gradient(145deg,#1b2d75,#0a123d);
         border: 1px solid #292929;
         border-radius: 14px;
         padding: 14px;
@@ -90,8 +90,8 @@ st.markdown(
         margin-top: 4px;
     }
     .slot {
-        background: #0f1738;
-        border: 1px dashed #444;
+        background: #101a46;
+        border: 1px dashed #536fe8;
         border-radius: 12px;
         padding: 12px;
         margin-bottom: 8px;
@@ -588,9 +588,10 @@ elif ya_seleccionado:
     st.divider()
 
     # ESTE BOTÓN ESTÁ DEBAJO DE LA ALINEACIÓN.
-    if not yo.get("listo", False):
+    if estado != "resultado" and not yo.get("listo", False):
         if st.button(
             "✅ ESTOY LISTO",
+            key=f"listo_alineacion_{player_id}",
             use_container_width=True,
         ):
             ok, mensaje = marcar_listo(codigo, player_id, True)
@@ -710,7 +711,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
     # Puedes pulsar ESTOY LISTO con 0, 1, 2 o 3 cambios.
     st.divider()
     if not yo.get("listo", False):
-        if st.button("✅ ESTOY LISTO", use_container_width=True):
+        if st.button("✅ ESTOY LISTO", key=f"listo_cambios_{jornada_actual}_{player_id}", use_container_width=True):
             ok, mensaje = marcar_listo(codigo, player_id, True)
             if not ok:
                 st.error(mensaje)
@@ -749,32 +750,61 @@ if estado in ("jugando", "resultado", "final"):
         # Firebase guarda los puntos de CADA jugador en el momento de
         # simular la jornada. Los leemos de ahí para que un cambio posterior
         # de plantilla jamás modifique los puntos históricos.
-        resultados_guardados = (
-            (torneo or {}).get("resultados_jornadas") or {}
-        )
-        puntos_guardados = resultados_guardados.get(
-            f"jornada_{jornada}", {}
+        # Estos datos se guardan en la SALA de Firebase (no dentro del torneo).
+        sala_actualizada = obtener_sala(codigo) or sala
+        resultados_guardados = sala_actualizada.get("resultados_jornadas") or {}
+        puntos_guardados_usuario = resultados_guardados.get(
+            f"jornada_{jornada}", {},
         ) or {}
 
-        puntos_jornada = {
-            pid: float(puntos_guardados.get(pid, 0))
-            for pid in mi_equipo
-        }
-
-        # El desglose visual se calcula para los jugadores actuales.
-        # Los puntos que se muestran arriba son siempre los históricos guardados.
-        _, detalles = puntos_de_jornada(
-            resultados_jornada,
-            mi_equipo,
+        # El admin guarda los puntos de CADA jugador de CADA usuario.
+        # Esto evita que un cambio de plantilla altere jornadas ya jugadas.
+        puntos_jugadores_guardados = (
+            sala_actualizada.get("puntos_jugadores_jornadas") or {}
         )
+        puntos_jornada_por_usuario = puntos_jugadores_guardados.get(
+            f"jornada_{jornada}", {},
+        ) or {}
+        puntos_jornada = puntos_jornada_por_usuario.get(player_id)
+
+        if isinstance(puntos_jornada, dict):
+            puntos_jornada = {
+                pid: float(puntos_jornada.get(pid, 0))
+                for pid in mi_equipo
+            }
+        else:
+            # Compatibilidad con salas antiguas: calcula solo como respaldo.
+            calculados, _ = puntos_de_jornada(resultados_jornada, mi_equipo)
+            puntos_jornada = {
+                pid: float(calculados.get(pid, 0))
+                for pid in mi_equipo
+            }
+
+        detalles_guardados = sala_actualizada.get("detalles_jornadas") or {}
+        detalles_usuario = detalles_guardados.get(
+            f"jornada_{jornada}", {},
+        ) or {}
+        detalles = detalles_usuario.get(player_id)
+
+        if not isinstance(detalles, dict):
+            _, detalles = puntos_de_jornada(resultados_jornada, mi_equipo)
 
         total_jornada = float(yo.get("puntos_jornada", 0))
+        total_torneo = float(yo.get("puntos_totales", 0))
 
-        st.markdown(
-            f'<div class="box"><div class="small">PUNTOS DE LA JORNADA</div>'
-            f'<div class="big">⭐ {total_jornada:.2f}</div></div>',
-            unsafe_allow_html=True,
-        )
+        col_pts1, col_pts2 = st.columns(2)
+        with col_pts1:
+            st.markdown(
+                f'<div class="box"><div class="small">PUNTOS DE LA JORNADA</div>'
+                f'<div class="big">⭐ {total_jornada:.2f}</div></div>',
+                unsafe_allow_html=True,
+            )
+        with col_pts2:
+            st.markdown(
+                f'<div class="box"><div class="small">PUNTOS TOTALES</div>'
+                f'<div class="big">🏆 {total_torneo:.2f}</div></div>',
+                unsafe_allow_html=True,
+            )
 
         st.subheader("📊 Desglose de tus jugadores")
 
