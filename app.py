@@ -354,6 +354,7 @@ st.write(
 
 estado = sala.get("estado", "esperando")
 seleccion_abierta = bool(sala.get("seleccion_abierta", False))
+jornada_actual = int(sala.get("jornada_actual", 0))
 mi_equipo = yo.get("equipo") or []
 ya_seleccionado = len(mi_equipo) == 11
 
