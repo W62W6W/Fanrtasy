@@ -18,22 +18,62 @@ def inicializar_firebase():
     if firebase_admin._apps:
         return firestore.client()
 
-    # Streamlit Cloud: usa st.secrets["firebase"]
+    # Streamlit Cloud: acepta Secrets en formato [firebase] y también
+    # Secrets con las claves de Firebase directamente en la raíz.
     try:
         import streamlit as st
 
+        datos_credenciales = None
+
         if "firebase" in st.secrets:
             datos_credenciales = dict(st.secrets["firebase"])
+        else:
+            claves_firebase = {
+                "type",
+                "project_id",
+                "private_key_id",
+                "private_key",
+                "client_email",
+                "client_id",
+                "auth_uri",
+                "token_uri",
+                "auth_provider_x509_cert_url",
+                "client_x509_cert_url",
+            }
+            if claves_firebase.issubset(set(st.secrets.keys())):
+                datos_credenciales = {
+                    clave: st.secrets[clave]
+                    for clave in claves_firebase
+                    if clave in st.secrets
+                }
+
+        if datos_credenciales:
+            # Streamlit Secrets puede guardar private_key con \n literal
+            # o con saltos de línea reales. Firebase necesita saltos reales.
+            if "private_key" in datos_credenciales:
+                datos_credenciales["private_key"] = str(
+                    datos_credenciales["private_key"]
+                ).replace("\\\\n", "\\n")
+
             cred = credentials.Certificate(datos_credenciales)
             firebase_admin.initialize_app(cred)
             return firestore.client()
-    except Exception:
-        pass
+
+    except Exception as e:
+        # Si los Secrets existen pero tienen un formato incorrecto, mostramos
+        # el error real en vez de ocultarlo y fingir que faltan las credenciales.
+        error_secrets = e
 
     # Local: usa el archivo privado que NO debe subirse a GitHub.
     ruta = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
 
     if not os.path.exists(ruta):
+        if "error_secrets" in locals():
+            raise RuntimeError(
+                "Firebase no pudo inicializarse con los Secrets de Streamlit. "
+                f"Error real: {error_secrets}"
+            ) from error_secrets
+
         raise FileNotFoundError(
             "No se encontró serviceAccountKey.json y tampoco están configurados "
             "los Secrets de Firebase en Streamlit."
