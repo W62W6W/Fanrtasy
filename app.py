@@ -617,17 +617,21 @@ if estado == "resultado" and len(mi_equipo) == 11:
 
     st.info(
         f"Puedes hacer hasta **3 cambios** después de esta jornada. "
-        f"Te quedan **{cambios_restantes}**."
+        f"Has usado **{cambios_usados}/3**."
     )
 
+    # No es obligatorio hacer cambios: se puede continuar directamente.
     if cambios_restantes > 0:
         col_vender, col_comprar = st.columns(2)
 
         with col_vender:
+            opciones_venta = [""] + list(mi_equipo)
             pid_venta = st.selectbox(
                 "🔴 VENDER JUGADOR",
-                mi_equipo,
+                opciones_venta,
+                index=0,
                 format_func=lambda pid: (
+                    "Selecciona un jugador..." if not pid else
                     f"{jugadores[pid]['nombre']} · "
                     f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
                     f"{dinero(jugadores[pid].get('precio', 0))}"
@@ -635,31 +639,43 @@ if estado == "resultado" and len(mi_equipo) == 11:
                 key=f"venta_jornada_{jornada_actual}_{cambios_usados}",
             )
 
-        posicion_venta = jugadores[pid_venta].get("posicion")
+        pid_compra = ""
+        if pid_venta:
+            posicion_venta = jugadores[pid_venta].get("posicion")
+            candidatos = [
+                pid for pid, jugador in jugadores.items()
+                if pid not in mi_equipo
+                and jugador.get("posicion") == posicion_venta
+            ]
 
-        candidatos = [
-            pid for pid, jugador in jugadores.items()
-            if pid not in mi_equipo
-            and jugador.get("posicion") == posicion_venta
-        ]
-
-        with col_comprar:
-            if candidatos:
-                pid_compra = st.selectbox(
+            with col_comprar:
+                if candidatos:
+                    opciones_compra = [""] + candidatos
+                    pid_compra = st.selectbox(
+                        "🟢 COMPRAR JUGADOR",
+                        opciones_compra,
+                        index=0,
+                        format_func=lambda pid: (
+                            "Selecciona un jugador..." if not pid else
+                            f"{jugadores[pid]['nombre']} · "
+                            f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
+                            f"{dinero(jugadores[pid].get('precio', 0))}"
+                        ),
+                        key=f"compra_jornada_{jornada_actual}_{cambios_usados}",
+                    )
+                else:
+                    st.warning("No hay sustitutos disponibles para esa posición.")
+        else:
+            with col_comprar:
+                st.selectbox(
                     "🟢 COMPRAR JUGADOR",
-                    candidatos,
-                    format_func=lambda pid: (
-                        f"{jugadores[pid]['nombre']} · "
-                        f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
-                        f"{dinero(jugadores[pid].get('precio', 0))}"
-                    ),
+                    [""],
+                    index=0,
+                    format_func=lambda _: "Primero selecciona a quién vender...",
                     key=f"compra_jornada_{jornada_actual}_{cambios_usados}",
                 )
-            else:
-                pid_compra = None
-                st.warning("No hay sustitutos disponibles para esa posición.")
 
-        if pid_compra:
+        if pid_venta and pid_compra:
             equipo_nuevo = list(mi_equipo)
             equipo_nuevo.remove(pid_venta)
             equipo_nuevo.append(pid_compra)
@@ -690,8 +706,18 @@ if estado == "resultado" and len(mi_equipo) == 11:
                 else:
                     st.success("✅ Cambio realizado correctamente.")
                     st.rerun()
+
+    # Puedes pulsar ESTOY LISTO con 0, 1, 2 o 3 cambios.
+    st.divider()
+    if not yo.get("listo", False):
+        if st.button("✅ ESTOY LISTO", use_container_width=True):
+            ok, mensaje = marcar_listo(codigo, player_id, True)
+            if not ok:
+                st.error(mensaje)
+            else:
+                st.rerun()
     else:
-        st.success("✅ Ya has utilizado los 3 cambios disponibles en esta jornada.")
+        st.success("🟢 Ya estás listo para la siguiente jornada.")
 
 # ============================================================
 # PARTIDA / RESULTADOS
@@ -717,12 +743,21 @@ if estado in ("jugando", "resultado", "final"):
                 f"{resultado['equipo_b']}**"
             )
 
-        puntos_jornada, detalles = puntos_de_jornada(
+        # Los puntos de esta jornada se toman de Firebase, donde quedaron
+        # guardados en el momento de la simulación. Así un cambio de plantilla
+        # posterior NO modifica los puntos que ya ganó el jugador.
+        puntos_jornada = {
+            player_id: float(yo.get("puntos_jornada", 0))
+        }
+
+        # El desglose visual se calcula solo para los jugadores que siguen
+        # en la plantilla; los puntos totales de la jornada no se recalculan.
+        _, detalles = puntos_de_jornada(
             resultados_jornada,
             mi_equipo,
         )
 
-        total_jornada = sum(puntos_jornada.values())
+        total_jornada = float(yo.get("puntos_jornada", 0))
 
         st.markdown(
             f'<div class="box"><div class="small">PUNTOS DE LA JORNADA</div>'
@@ -738,7 +773,7 @@ if estado in ("jugando", "resultado", "final"):
             reverse=True,
         ):
             jugador = jugadores[pid]
-            puntos = puntos_jornada.get(pid, 0)
+            puntos = float(yo.get("puntos_jornada", 0)) if pid == player_id else 0.0
 
             with st.expander(
                 f"{jugador['nombre']} · ⭐ {puntos:.2f}"
