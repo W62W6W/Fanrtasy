@@ -227,19 +227,19 @@ if jornada_actual == 0:
             incompletos = sum(len(j.get("equipo") or []) != 11 for j in jugadores_sala.values())
             st.warning(f"Pendientes: {pendientes} · Plantillas incompletas: {incompletos}")
 
-        a,b = st.columns(2)
-        with a:
-            if st.button("🔒 CERRAR SELECCIÓN", key="cerrar_seleccion_admin", use_container_width=True):
-                cerrar_seleccion(codigo)
+        if st.button(
+            "🚀 EMPEZAR PARTIDA",
+            key="empezar_partida_admin",
+            disabled=not (listos and completos),
+            use_container_width=True,
+        ):
+            # Al iniciar la partida la selección se cierra automáticamente.
+            ok, msg = iniciar_partida(codigo)
+            if not ok:
+                st.error(msg)
+            else:
+                st.success("¡Partida iniciada! La selección se ha cerrado automáticamente.")
                 st.rerun()
-        with b:
-            if st.button("🚀 EMPEZAR PARTIDA", key="empezar_partida_admin",
-                         disabled=not(listos and completos), use_container_width=True):
-                ok,msg = iniciar_partida(codigo)
-                if not ok:
-                    st.error(msg)
-                else:
-                    st.rerun()
 
 else:
     siguiente = len(resultados_guardados) + 1
