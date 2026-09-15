@@ -37,6 +37,39 @@ st.markdown(
     [data-testid="stHeader"]{background:rgba(0,0,0,0)}
     [data-testid="stSidebar"]{background:#07152c;border-right:1px solid #244c91}
     h1,h2,h3,h4,h5,h6,p,label,span{color:#fff!important}
+
+    /* Campos del jugador: etiquetas y valores en negro para que se lean bien */
+    .stTextInput label, .stSelectbox label, .stMultiSelect label,
+    .stNumberInput label, .stSlider label {
+        color:#111827!important;
+        font-weight:800!important;
+    }
+    .stTextInput input {
+        color:#111827!important;
+        background:#ffffff!important;
+        border:1px solid #7aa2e8!important;
+    }
+    .stTextInput input::placeholder {
+        color:#374151!important;
+        opacity:1!important;
+    }
+    div[data-baseweb="select"]>div {
+        background:#ffffff!important;
+        color:#111827!important;
+        border:1px solid #7aa2e8!important;
+    }
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] input {
+        color:#111827!important;
+    }
+    /* Menú desplegable abierto */
+    [role="listbox"], [role="option"] {
+        background:#ffffff!important;
+        color:#111827!important;
+    }
+    [role="option"] * {
+        color:#111827!important;
+    }
     .hero{background:linear-gradient(135deg,#0b2d69,#153b88 55%,#312e81);border:1px solid #4f7cff;border-radius:18px;padding:18px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
     .hero-title{font-size:30px;font-weight:900}.hero-sub{color:#bfdbfe;font-size:14px}
     .panel,.player-card{background:linear-gradient(145deg,#122957,#0b1835);border:1px solid #315ca8;border-radius:14px;padding:12px;margin-bottom:7px}
@@ -56,7 +89,8 @@ st.markdown(
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
     .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
     .stButton>button:hover{background:linear-gradient(135deg,#3b82f6,#6366f1)!important;border-color:#bfdbfe!important}
-    div[data-baseweb="select"]>div{background:#0e2144!important;color:white!important;border:1px solid #315a9b!important} div[data-baseweb="select"] span{color:white!important} input{color:white!important}
+    /* Los controles de entrada permanecen con texto negro */
+    input{color:#111827!important}
     /* Filtros: fondo claro y texto negro para que Buscar jugador y Posición se lean bien */
     div[data-testid="column"]:has([data-testid="stTextInput"]) {background:#eaf2ff!important;border:1px solid #7aa2e8!important;border-radius:14px!important;padding:12px!important;}
     div[data-testid="column"]:has([data-testid="stTextInput"]) label {color:#111827!important;font-weight:800!important;}
@@ -338,8 +372,10 @@ jugadores_sala = sala.get("jugadores") or {}
 yo = jugadores_sala.get(player_id)
 
 if not yo:
-    st.error("No se encontró tu jugador en la sala.")
-    st.stop()
+    # El administrador te quitó de la sala.
+    # Volvemos directamente a la pantalla inicial para poder entrar de nuevo.
+    limpiar_sesion()
+    st.rerun()
 
 st.markdown(
     f'<div class="hero"><div class="hero-title">⚽ WORLD CUP FANTASY</div>'
@@ -760,8 +796,13 @@ if estado in ("jugando", "resultado", "final"):
         ) or {}
         detalles = detalles_usuario.get(player_id)
 
-        if not isinstance(detalles, dict):
-            _, detalles = puntos_de_jornada(resultados_jornada, mi_equipo)
+        # IMPORTANTE: usar el desglose guardado en Firebase.
+        # Así, si después vendes a un jugador, su jornada histórica
+        # no cambia por la nueva plantilla.
+        detalles_guardados_disponibles = isinstance(detalles, dict)
+
+        if not detalles_guardados_disponibles:
+            detalles = {}
 
         total_jornada = float(yo.get("puntos_jornada", 0))
         total_torneo = float(yo.get("puntos_totales", 0))
@@ -781,6 +822,12 @@ if estado in ("jugando", "resultado", "final"):
             )
 
         st.subheader("📊 Desglose de tus jugadores")
+        st.caption(
+            "Abre cada jugador para ver de dónde salen sus puntos: "
+            "goles, asistencias, tiros a puerta, regates, intercepciones, "
+            "duelos, recuperaciones, despejes, paradas, pérdidas, faltas, "
+            "tarjetas, minutos y portería a cero."
+        )
 
         for pid in sorted(
             mi_equipo,
@@ -791,12 +838,79 @@ if estado in ("jugando", "resultado", "final"):
             puntos = float(puntos_jornada.get(pid, 0.0))
 
             with st.expander(
-                f"{jugador['nombre']} · ⭐ {puntos:.2f}"
+                f"{jugador['nombre']} · ⭐ {puntos:.2f}",
+                expanded=False,
             ):
-                detalle = detalles.get(pid, {})
+                detalle = detalles.get(pid, {}) if isinstance(detalles, dict) else {}
+
                 if detalle:
-                    for concepto, valor in detalle.items():
-                        st.write(f"{concepto}: **{valor:+.2f}**")
+                    # Primero mostramos los conceptos que normalmente interesan
+                    # en el Fantasy, y después cualquier concepto adicional
+                    # que venga guardado por fantasy.py.
+                    orden = [
+                        "minutos", "minutos_jugados",
+                        "goles", "asistencias", "asistencia",
+                        "tiros_a_puerta", "shots_on_target",
+                        "regates", "dribbles",
+                        "intercepciones", "duelos_ganados",
+                        "recuperaciones", "despejes", "paradas", "saves",
+                        "balones_perdidos", "faltas",
+                        "amarillas", "tarjetas_amarillas",
+                        "rojas", "tarjetas_rojas",
+                        "portería_a_cero", "clean_sheet",
+                    ]
+                    etiquetas = {
+                        "minutos": "Minutos",
+                        "minutos_jugados": "Minutos",
+                        "goles": "Goles",
+                        "asistencias": "Asistencias",
+                        "asistencia": "Asistencias",
+                        "tiros_a_puerta": "Tiros a puerta",
+                        "shots_on_target": "Tiros a puerta",
+                        "regates": "Regates",
+                        "dribbles": "Regates",
+                        "intercepciones": "Intercepciones",
+                        "duelos_ganados": "Duelos ganados",
+                        "recuperaciones": "Recuperaciones",
+                        "despejes": "Despejes",
+                        "paradas": "Paradas",
+                        "saves": "Paradas",
+                        "balones_perdidos": "Balones perdidos",
+                        "faltas": "Faltas",
+                        "amarillas": "Tarjetas amarillas",
+                        "tarjetas_amarillas": "Tarjetas amarillas",
+                        "rojas": "Tarjetas rojas",
+                        "tarjetas_rojas": "Tarjetas rojas",
+                        "portería_a_cero": "Portería a cero",
+                        "clean_sheet": "Portería a cero",
+                    }
+
+                    claves = []
+                    for clave in orden:
+                        if clave in detalle and clave not in claves:
+                            claves.append(clave)
+                    for clave in detalle:
+                        if clave not in claves:
+                            claves.append(clave)
+
+                    for concepto in claves:
+                        valor = detalle.get(concepto, 0)
+                        try:
+                            valor_num = float(valor)
+                            st.write(
+                                f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
+                                f"{valor_num:+.2f}"
+                            )
+                        except (TypeError, ValueError):
+                            st.write(
+                                f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
+                                f"{valor}"
+                            )
+                elif not detalles_guardados_disponibles:
+                    st.info(
+                        "El desglose de esta jornada todavía no está guardado "
+                        "en Firebase. Las jornadas nuevas sí quedarán guardadas."
+                    )
                 else:
                     st.write("Sin puntos en esta jornada.")
 
