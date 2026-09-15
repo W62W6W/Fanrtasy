@@ -33,73 +33,30 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
-    .stApp { background: #050b24; color: white; }
-    [data-testid="stSidebar"] { background: #08113a; border-right: 1px solid #2846b8; }
-    h1,h2,h3,h4,h5,h6,p,label { color: white !important; }
-
-    div[data-baseweb="select"] > div {
-        background: #101a46 !important;
-        color: white !important;
-        border: 1px solid #3b5bd6 !important;
-    }
-    div[data-baseweb="select"] span { color: white !important; }
-
-    .stButton > button {
-        background: linear-gradient(135deg,#2847c7,#182d8c) !important;
-        color: white !important;
-        border: 1px solid #5c75ff !important;
-        border-radius: 10px !important;
-        font-weight: bold !important;
-        min-height: 42px !important;
-    }
-    .stButton > button:hover {
-        background: linear-gradient(135deg,#3a5cff,#2941b8) !important;
-        border-color: white !important;
-    }
-
-    .box {
-        background: linear-gradient(145deg,#1b2d75,#0a123d);
-        border: 1px solid #4563e8;
-        border-radius: 15px;
-        padding: 18px;
-        margin-bottom: 12px;
-    }
-    .big {
-        font-size: 30px;
-        font-weight: 700;
-    }
-    .small {
-        color: #999;
-        font-size: 13px;
-        letter-spacing: 1px;
-    }
-    .player-card {
-        background: linear-gradient(145deg,#1b2d75,#0a123d);
-        border: 1px solid #292929;
-        border-radius: 14px;
-        padding: 14px;
-        margin-bottom: 7px;
-    }
-    .player-name {
-        font-size: 18px;
-        font-weight: 700;
-    }
-    .player-info {
-        color: #aaa;
-        font-size: 13px;
-        margin-top: 4px;
-    }
-    .slot {
-        background: #101a46;
-        border: 1px dashed #536fe8;
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
-        text-align: center;
-    }
-    .filled {
-        border-style: solid;
-    }
+    .stApp {background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.18),transparent 30%),linear-gradient(180deg,#061226 0%,#08172f 52%,#0b1b38 100%);color:#fff}
+    [data-testid="stHeader"]{background:rgba(0,0,0,0)}
+    [data-testid="stSidebar"]{background:#07152c;border-right:1px solid #244c91}
+    h1,h2,h3,h4,h5,h6,p,label,span{color:#fff!important}
+    .hero{background:linear-gradient(135deg,#0b2d69,#153b88 55%,#312e81);border:1px solid #4f7cff;border-radius:18px;padding:18px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .hero-title{font-size:30px;font-weight:900}.hero-sub{color:#bfdbfe;font-size:14px}
+    .panel,.player-card{background:linear-gradient(145deg,#122957,#0b1835);border:1px solid #315ca8;border-radius:14px;padding:12px;margin-bottom:7px}
+    .section-title{font-size:18px;font-weight:850;color:#dbeafe;margin:2px 0 10px}
+    .market-head{display:grid;grid-template-columns:58px 1.8fr 1fr 90px;gap:10px;color:#93c5fd;font-size:12px;font-weight:800;padding:6px 12px 8px;text-transform:uppercase}
+    .market-row{display:grid;grid-template-columns:58px 1.8fr 1fr 90px;gap:10px;align-items:center;background:linear-gradient(145deg,#102b59,#0b1d3b);border:1px solid #244a83;border-radius:12px;padding:8px 10px;margin-bottom:7px}
+    .market-name{font-weight:800;font-size:14px}.market-team{color:#bfdbfe;font-size:12px}.market-price{font-weight:900;color:#e0e7ff;font-size:15px}
+    .shirt-wrap{display:flex;justify-content:center;align-items:center}.shirt{width:48px;height:54px;filter:drop-shadow(0 4px 5px rgba(0,0,0,.28))}.mini-shirt{width:40px;height:45px}
+    .lineup-panel{background:linear-gradient(145deg,#0d2349,#08162e);border:1px solid #2e5ca6;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+    .lineup-title{font-size:20px;font-weight:900}.formation{color:#93c5fd;font-size:12px;font-weight:800;margin-bottom:12px}
+    .position-title{color:#bfdbfe;font-size:12px;font-weight:900;margin:10px 0 6px;text-transform:uppercase}
+    .slot{background:#0d2345;border:1px dashed #4167a7;border-radius:11px;padding:6px;margin-bottom:6px;text-align:center;min-height:62px}.slot-filled{border-style:solid;background:linear-gradient(145deg,#15366c,#0d2143)}
+    .slot-name{font-size:11px;font-weight:800;line-height:1.1}.slot-team{color:#93c5fd;font-size:9px;margin-top:2px}
+    .budget-card{background:linear-gradient(135deg,#0e326d,#182e72);border:1px solid #4f7cff;border-radius:14px;padding:12px;margin-top:10px}
+    .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
+    .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
+    .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
+    .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
+    .stButton>button:hover{background:linear-gradient(135deg,#3b82f6,#6366f1)!important;border-color:#bfdbfe!important}
+    div[data-baseweb="select"]>div{background:#0e2144!important;color:white!important;border:1px solid #315a9b!important} div[data-baseweb="select"] span{color:white!important} input{color:white!important}
     </style>
     """,
     unsafe_allow_html=True,
@@ -148,54 +105,56 @@ def valor_equipo(equipo):
     return total
 
 
+def camiseta_svg(equipo, mini=False):
+    colores = {
+        "Francia": ("#173b9b","#ffffff","#e63946"),
+        "España": ("#d90429","#ffcc00","#aa001c"),
+        "Argentina": ("#75bde8","#ffffff","#75bde8"),
+        "Bélgica": ("#111111","#f1c40f","#d90429"),
+        "Inglaterra": ("#ffffff","#173b9b","#d90429"),
+        "Noruega": ("#d90429","#173b9b","#ffffff"),
+        "Marruecos": ("#c1121f","#006233","#ffffff"),
+        "Suiza": ("#d90429","#ffffff","#d90429"),
+    }
+    c1,c2,c3 = colores.get(equipo,("#2563eb","#ffffff","#4f46e5"))
+    cls = "mini-shirt" if mini else "shirt"
+    return (
+        f'<svg class="{cls}" viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg">'
+        f'<path d="M23 10L7 21L15 39L25 33L25 78Q40 85 55 78L55 33L65 39L73 21L57 10Q50 17 40 17Q30 17 23 10Z" fill="{c1}" stroke="#dbeafe" stroke-width="2"/>'
+        f'<path d="M25 33L25 78Q40 85 55 78L55 33L50 35L50 75Q40 79 30 75L30 35Z" fill="{c2}" opacity=".88"/>'
+        f'<path d="M31 16Q40 22 49 16L47 26Q40 30 33 26Z" fill="{c3}"/>'
+        f'<path d="M7 21L15 39L22 35L14 19Z" fill="{c3}"/><path d="M73 21L65 39L58 35L66 19Z" fill="{c3}"/>'
+        f'</svg>'
+    )
+
 def jugador_html(jugador):
     st.markdown(
-        f"""
-        <div class="player-card">
-            <div class="player-name">{jugador['nombre']}</div>
-            <div class="player-info">
-                {jugador.get('equipo','')} · {NOMBRES_POSICION.get(jugador.get('posicion',''), jugador.get('posicion',''))}
-            </div>
-            <div class="player-info">⚔️ Ataque: {jugador.get('ataque', jugador.get('atk', '—'))} · 🛡️ Defensa: {jugador.get('defensa', jugador.get('def', '—'))}</div>
-            <div class="player-info">💰 {dinero(jugador.get('precio', 0))}</div>
-        </div>
-        """,
+        f'<div class="market-row"><div class="shirt-wrap">{camiseta_svg(jugador.get("equipo",""),True)}</div>'
+        f'<div><div class="market-name">{jugador.get("nombre","")}</div>'
+        f'<div class="market-team">{jugador.get("equipo","")} · {NOMBRES_POSICION.get(jugador.get("posicion",""),jugador.get("posicion",""))}</div></div>'
+        f'<div class="market-team">⚔️ {jugador.get("ataque",jugador.get("atk","—"))} &nbsp; 🛡️ {jugador.get("defensa",jugador.get("def","—"))}</div>'
+        f'<div class="market-price">💰 {dinero(jugador.get("precio",0))}</div></div>',
         unsafe_allow_html=True,
     )
 
 
 def mostrar_alineacion(equipo, titulo="TU ALINEACIÓN"):
-    st.subheader(titulo)
-    posiciones = {p: [] for p in FORMACION}
-
+    st.markdown(f'<div class="lineup-title">👕 {titulo}</div><div class="formation">4 - 3 - 3</div>', unsafe_allow_html=True)
+    posiciones={p:[] for p in FORMACION}
     for pid in equipo or []:
         if pid in jugadores:
             posiciones[jugadores[pid]["posicion"]].append(pid)
-
-    nombres = {
-        "POR": "🧤 PORTERO",
-        "DEF": "🛡️ DEFENSAS",
-        "MED": "⚙️ MEDIOCAMPISTAS",
-        "DEL": "⚽ DELANTEROS",
-    }
-
-    for pos in ["POR", "DEF", "MED", "DEL"]:
-        st.caption(nombres[pos])
+    nombres={"POR":"🧤 PORTEROS","DEF":"🛡️ DEFENSAS","MED":"⚙️ MEDIOCAMPISTAS","DEL":"⚽ DELANTEROS"}
+    for pos in ["POR","DEF","MED","DEL"]:
+        st.markdown(f'<div class="position-title">{nombres[pos]} ({len(posiciones[pos])}/{FORMACION[pos]})</div>',unsafe_allow_html=True)
         for i in range(FORMACION[pos]):
             if i < len(posiciones[pos]):
-                j = jugadores[posiciones[pos][i]]
+                j=jugadores[posiciones[pos][i]]
                 st.markdown(
-                    f'<div class="slot filled"><b>{j["nombre"]}</b><br>'
-                    f'<span style="color:#aaa">{j["equipo"]} · {NOMBRES_POSICION.get(j["posicion"], j["posicion"])} · '
-                    f'{dinero(j.get("precio",0))}</span></div>',
-                    unsafe_allow_html=True,
-                )
+                    f'<div class="slot slot-filled">{camiseta_svg(j.get("equipo",""),True)}<div class="slot-name">{j["nombre"]}</div><div class="slot-team">{j["equipo"]} · {dinero(j.get("precio",0))}</div></div>',
+                    unsafe_allow_html=True)
             else:
-                st.markdown(
-                    f'<div class="slot">{NOMBRES_POSICION.get(pos, pos)} vacío</div>',
-                    unsafe_allow_html=True,
-                )
-
+                st.markdown(f'<div class="slot"><div style="font-size:22px">👕</div><div class="slot-name">{NOMBRES_POSICION.get(pos,pos)} vacío</div></div>',unsafe_allow_html=True)
 
 def limpiar_sesion():
     for clave in [
@@ -347,9 +306,10 @@ if not yo:
     st.error("No se encontró tu jugador en la sala.")
     st.stop()
 
-st.title("⚽ WORLD CUP FANTASY")
-st.write(
-    f"Hola, **{yo.get('nombre','')}** · Sala **{codigo}**"
+st.markdown(
+    f'<div class="hero"><div class="hero-title">⚽ WORLD CUP FANTASY</div>'
+    f'<div class="hero-sub">Hola, <b>{yo.get("nombre","")}</b> · Sala <b>{codigo}</b></div></div>',
+    unsafe_allow_html=True,
 )
 
 estado = sala.get("estado", "esperando")
@@ -375,149 +335,79 @@ if estado == "esperando" and not seleccion_abierta:
 # ============================================================
 
 if seleccion_abierta and not ya_seleccionado:
-    st.success("🟢 SELECCIÓN ABIERTA")
-    st.write("Construye tu 4-3-3. Una vez guardada, **NO podrás cambiarla**.")
+    st.markdown(
+        '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 POR + 4 DEF + 3 MED + 3 DEL · Presupuesto máximo 540M</div></div>',
+        unsafe_allow_html=True,
+    )
 
-    col_plantilla, col_mercado = st.columns([1, 1.35])
+    col_filtros, col_mercado, col_alineacion = st.columns([0.95, 2.0, 1.05], gap="small")
 
-    # ---------------- TU ALINEACIÓN ----------------
-    with col_plantilla:
-        mostrar_alineacion(mi_equipo)
+    with col_filtros:
+        st.markdown('<div class="section-title">🔎 FILTRAR JUGADORES</div>', unsafe_allow_html=True)
+        filtro_busqueda = st.text_input("Buscar jugador", placeholder="Buscar jugador...", key="buscar_jugador")
+        filtro_pos = st.selectbox("POSICIÓN", ["Todos","Portero","Defensa","Mediocampista","Delantero"], key="filtro_posicion")
+        mapa={"Todos":"Todos","Portero":"POR","Defensa":"DEF","Mediocampista":"MED","Delantero":"DEL"}
+        filtro_pos_codigo=mapa[filtro_pos]
+        equipos=sorted({j.get("equipo") for j in jugadores.values() if j.get("equipo")})
+        filtro_eq=st.selectbox("SELECCIÓN", ["Todos"]+equipos, key="filtro_equipo")
+        precios=[float(j.get("precio",0)) for j in jugadores.values()]
+        precio_max=max(precios) if precios else PRESUPUESTO
+        filtro_precio=st.slider("PRECIO MÁXIMO",0.0,float(max(540_000_000,precio_max)),float(max(540_000_000,precio_max)),1_000_000.0,key="filtro_precio")
+        st.markdown(
+            f'<div class="filter-card"><div class="small">PRESUPUESTO RESTANTE</div>'
+            f'<div style="font-size:24px;font-weight:900">{dinero(PRESUPUESTO-valor_equipo(mi_equipo))}</div></div>',
+            unsafe_allow_html=True)
 
-        st.divider()
-        posiciones = contar_posiciones(mi_equipo)
-        valor = valor_equipo(mi_equipo)
-        restante = PRESUPUESTO - valor
-
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("💰 RESTANTE", dinero(restante))
-        with c2:
-            st.metric("👥 JUGADORES", f"{len(mi_equipo)} / 11")
-
-        st.divider()
-
-        # El botón queda debajo de la alineación, como pidió el usuario.
-        puede_guardar = (
-            plantilla_completa(mi_equipo)
-            and valor <= PRESUPUESTO
-        )
-
-        if st.button(
-            "💾 GUARDAR ALINEACIÓN",
-            disabled=not puede_guardar,
-            use_container_width=True,
-        ):
-            ok, mensaje = guardar_equipo(
-                codigo,
-                player_id,
-                mi_equipo,
-                PRESUPUESTO - valor,
-            )
-            if not ok:
-                st.error(mensaje)
-            else:
-                st.rerun()
-
-        if not plantilla_completa(mi_equipo):
-            p = contar_posiciones(mi_equipo)
-            st.caption(
-                f"Necesitas 1 Portero, 4 Defensas, 3 Mediocampistas y 3 Delanteros. "
-                f"Actualmente: {p['POR']} Portero · {p['DEF']} Defensa · "
-                f"{p['MED']} Mediocampista · {p['DEL']} Delantero."
-            )
-
-    # ---------------- MERCADO ----------------
     with col_mercado:
-        st.header("🛒 MERCADO")
+        st.markdown(f'<div class="section-title">JUGADORES DISPONIBLES <span class="small">· {len(jugadores)} jugadores</span></div>',unsafe_allow_html=True)
+        st.markdown('<div class="market-head"><div></div><div>JUGADOR</div><div>ESTADÍSTICAS</div><div>PRECIO</div></div>',unsafe_allow_html=True)
+        actuales=contar_posiciones(mi_equipo)
+        valor_actual=valor_equipo(mi_equipo)
+        mostrados=0
 
-        filtro_pos = st.selectbox(
-            "Posición",
-            ["Todos", "Portero", "Defensa", "Mediocampista", "Delantero"],
-        )
-        filtro_pos_map = {
-            "Todos": "Todos",
-            "Portero": "POR",
-            "Defensa": "DEF",
-            "Mediocampista": "MED",
-            "Delantero": "DEL",
-        }
-        filtro_pos_codigo = filtro_pos_map[filtro_pos]
-
-        filtro_eq = st.selectbox(
-            "Selección",
-            ["Todos"] + sorted(
-                {j.get("equipo") for j in jugadores.values()}
-            ),
-        )
-
-        limites = FORMACION
-        actuales = contar_posiciones(mi_equipo)
-
-        for pid, jugador in jugadores.items():
-            if pid in mi_equipo:
-                continue
-
-            pos = jugador.get("posicion")
-            eq = jugador.get("equipo")
-
-            if filtro_pos_codigo != "Todos" and pos != filtro_pos_codigo:
-                continue
-            if filtro_eq != "Todos" and eq != filtro_eq:
-                continue
-
+        for pid,jugador in jugadores.items():
+            if pid in mi_equipo: continue
+            pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
+            precio=float(jugador.get("precio",0) or 0)
+            if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
+            if filtro_eq!="Todos" and eq!=filtro_eq: continue
+            if precio>filtro_precio: continue
+            if filtro_busqueda and filtro_busqueda.lower() not in nombre.lower(): continue
+            mostrados+=1
             jugador_html(jugador)
 
-            try:
-                precio = float(jugador.get("precio", 0))
-            except (TypeError, ValueError):
-                precio = 0
+            if actuales.get(pos,0)>=FORMACION.get(pos,0):
+                st.button(f"LÍMITE DE {NOMBRES_POSICION.get(pos,pos).upper()}",key=f"lim_{pid}",disabled=True,use_container_width=True)
+            elif valor_actual+precio>PRESUPUESTO:
+                st.button("💰 PRESUPUESTO INSUFICIENTE",key=f"money_{pid}",disabled=True,use_container_width=True)
+            elif len(mi_equipo)>=11:
+                st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
+            elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
+                nuevo=list(mi_equipo); nuevo.append(pid)
+                nuevo_valor=valor_equipo(nuevo)
+                ok,mensaje=guardar_equipo(codigo,player_id,nuevo,PRESUPUESTO-nuevo_valor)
+                if not ok: st.error(mensaje)
+                else: st.rerun()
 
-            if actuales.get(pos, 0) >= limites.get(pos, 0):
-                st.button(
-                    f"LÍMITE DE {NOMBRES_POSICION.get(pos, pos)}",
-                    key=f"lim_{pid}",
-                    disabled=True,
-                    use_container_width=True,
-                )
-            elif valor_equipo(mi_equipo) + precio > PRESUPUESTO:
-                st.button(
-                    "💰 PRESUPUESTO INSUFICIENTE",
-                    key=f"money_{pid}",
-                    disabled=True,
-                    use_container_width=True,
-                )
-            elif len(mi_equipo) >= 11:
-                st.button(
-                    "PLANTILLA COMPLETA",
-                    key=f"full_{pid}",
-                    disabled=True,
-                    use_container_width=True,
-                )
-            else:
-                if st.button(
-                    "➕ AÑADIR",
-                    key=f"add_{pid}",
-                    use_container_width=True,
-                ):
-                    nuevo_equipo = list(mi_equipo)
-                    nuevo_equipo.append(pid)
+        if mostrados==0: st.info("No hay jugadores que coincidan con los filtros.")
 
-                    nuevo_valor = valor_equipo(nuevo_equipo)
-                    nuevo_restante = PRESUPUESTO - nuevo_valor
-
-                    ok, mensaje = guardar_equipo(
-                        codigo,
-                        player_id,
-                        nuevo_equipo,
-                        nuevo_restante,
-                    )
-
-                    if not ok:
-                        st.error(mensaje)
-                    else:
-                        st.rerun()
-
+    with col_alineacion:
+        st.markdown('<div class="lineup-panel">',unsafe_allow_html=True)
+        mostrar_alineacion(mi_equipo)
+        valor=valor_equipo(mi_equipo)
+        restante=PRESUPUESTO-valor
+        posiciones=contar_posiciones(mi_equipo)
+        st.markdown(f'<div class="budget-card"><div class="budget-label">Presupuesto restante</div><div class="budget-value">{dinero(restante)}</div></div>',unsafe_allow_html=True)
+        st.caption(f"👥 {len(mi_equipo)}/11 · POR {posiciones['POR']}/1 · DEF {posiciones['DEF']}/4 · MED {posiciones['MED']}/3 · DEL {posiciones['DEL']}/3")
+        puede_guardar=plantilla_completa(mi_equipo) and valor<=PRESUPUESTO
+        if st.button("✓ GUARDAR ALINEACIÓN",disabled=not puede_guardar,use_container_width=True,key="guardar_alineacion_principal"):
+            ok,mensaje=guardar_equipo(codigo,player_id,mi_equipo,restante)
+            if not ok: st.error(mensaje)
+            else: st.rerun()
+        if not plantilla_completa(mi_equipo):
+            st.caption("Completa: 1 POR · 4 DEF · 3 MED · 3 DEL.")
+        st.markdown('</div>',unsafe_allow_html=True)
 
 # ============================================================
 # QUITAR JUGADORES DURANTE LA SELECCIÓN
