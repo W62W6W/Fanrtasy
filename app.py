@@ -57,6 +57,13 @@ st.markdown(
     .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
     .stButton>button:hover{background:linear-gradient(135deg,#3b82f6,#6366f1)!important;border-color:#bfdbfe!important}
     div[data-baseweb="select"]>div{background:#0e2144!important;color:white!important;border:1px solid #315a9b!important} div[data-baseweb="select"] span{color:white!important} input{color:white!important}
+    /* Filtros: fondo claro y texto negro para que Buscar jugador y Posición se lean bien */
+    div[data-testid="column"]:has([data-testid="stTextInput"]) {background:#eaf2ff!important;border:1px solid #7aa2e8!important;border-radius:14px!important;padding:12px!important;}
+    div[data-testid="column"]:has([data-testid="stTextInput"]) label {color:#111827!important;font-weight:800!important;}
+    div[data-testid="column"]:has([data-testid="stTextInput"]) input {background:#ffffff!important;color:#111827!important;border:1px solid #7aa2e8!important;}
+    div[data-testid="column"]:has([data-testid="stTextInput"]) input::placeholder {color:#111827!important;opacity:1!important;}
+    div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"]>div {background:#ffffff!important;color:#111827!important;border:1px solid #7aa2e8!important;}
+    div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"] span {color:#111827!important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -72,13 +79,20 @@ def dinero(valor):
     except (TypeError, ValueError):
         return "0"
 
+    signo = "-" if valor < 0 else ""
+    valor = abs(valor)
+
     if valor >= 1_000_000:
         n = valor / 1_000_000
-        return f"{int(n)}M" if n.is_integer() else f"{n:.1f}M"
+        texto = f"{int(n)}M" if n.is_integer() else f"{n:.1f}M"
+        return signo + texto
+
     if valor >= 1_000:
         n = valor / 1_000
-        return f"{int(n)}K" if n.is_integer() else f"{n:.1f}K"
-    return str(int(valor))
+        texto = f"{int(n)}K" if n.is_integer() else f"{n:.1f}K"
+        return signo + texto
+
+    return signo + str(int(valor))
 
 
 def contar_posiciones(equipo):
@@ -185,6 +199,27 @@ def puntos_de_jornada(resultado_partidos, equipo_fantasy):
                     )
 
     return puntos, detalles
+
+
+def puntos_jugador_en_jornada(resultados_jornada, player_id):
+    """Calcula los puntos históricos de un jugador en una jornada.
+    Se usa para mostrar a quién comprar y no modifica ningún total del usuario.
+    """
+    total = 0.0
+    for resultado in resultados_jornada or []:
+        fantasy = calcular_fantasy(resultado)
+        total += float(fantasy.get(player_id, 0) or 0)
+    return total
+
+
+def puntos_guardados_usuario_jornada(sala, player_id, jornada):
+    """Devuelve los puntos individuales guardados para una jornada.
+    No recalcula jornadas históricas con la plantilla actual.
+    """
+    datos = sala.get("puntos_jugadores_jornadas") or {}
+    jornada_data = datos.get(f"jornada_{jornada}", {}) or {}
+    jugador_data = jornada_data.get(player_id, {}) or {}
+    return {pid: float(valor) for pid, valor in jugador_data.items()}
 
 
 def calcular_puntos_todos_jugadores(sala, torneo):
@@ -505,6 +540,23 @@ if estado == "resultado" and len(mi_equipo) == 11:
 
     cambios_usados = int(yo.get("cambios_jornada", 0))
     cambios_restantes = max(0, 3 - cambios_usados)
+    puntos_actuales = puntos_guardados_usuario_jornada(sala, player_id, jornada_actual)
+
+    # Puntos de TODOS los jugadores de la jornada recién terminada.
+    # Esto permite comparar, por ejemplo, a Lamine Yamal con Messi
+    # antes de confirmar un cambio, sin alterar los puntos históricos.
+    torneo_cambios = obtener_torneo(codigo) or {}
+    resultados_cambios = torneo_cambios.get("resultados") or []
+    resultados_ultima_jornada = (
+        resultados_cambios[jornada_actual - 1]
+        if 0 < jornada_actual <= len(resultados_cambios)
+        else []
+    )
+
+    puntos_ultima_jornada = {
+        pid: puntos_jugador_en_jornada(resultados_ultima_jornada, pid)
+        for pid in jugadores
+    }
 
     st.info(
         f"Puedes hacer hasta **3 cambios** después de esta jornada. "
@@ -525,7 +577,8 @@ if estado == "resultado" and len(mi_equipo) == 11:
                     "Selecciona un jugador..." if not pid else
                     f"{jugadores[pid]['nombre']} · "
                     f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
-                    f"{dinero(jugadores[pid].get('precio', 0))}"
+                    f"{dinero(jugadores[pid].get('precio', 0))} · "
+                    f"⭐ {puntos_actuales.get(pid, 0):.2f}"
                 ),
                 key=f"venta_jornada_{jornada_actual}_{cambios_usados}",
             )
@@ -550,7 +603,8 @@ if estado == "resultado" and len(mi_equipo) == 11:
                             "Selecciona un jugador..." if not pid else
                             f"{jugadores[pid]['nombre']} · "
                             f"{NOMBRES_POSICION.get(jugadores[pid].get('posicion',''), jugadores[pid].get('posicion',''))} · "
-                            f"{dinero(jugadores[pid].get('precio', 0))}"
+                            f"{dinero(jugadores[pid].get('precio', 0))} · "
+                            f"⭐ {puntos_ultima_jornada.get(pid, 0):.2f}"
                         ),
                         key=f"compra_jornada_{jornada_actual}_{cambios_usados}",
                     )
@@ -577,6 +631,12 @@ if estado == "resultado" and len(mi_equipo) == 11:
             st.metric(
                 "💰 PRESUPUESTO DESPUÉS DEL CAMBIO",
                 dinero(presupuesto_nuevo),
+            )
+
+            st.info(
+                f"⭐ **{jugadores[pid_compra]['nombre']} hizo "
+                f"{puntos_ultima_jornada.get(pid_compra, 0):.2f} puntos "
+                f"en la jornada recién terminada.**"
             )
 
             if presupuesto_nuevo < 0:
@@ -609,6 +669,30 @@ if estado == "resultado" and len(mi_equipo) == 11:
                 st.rerun()
     else:
         st.success("🟢 Ya estás listo para la siguiente jornada.")
+
+# ============================================================
+# PUNTOS DE LOS JUGADORES DESPUÉS DE LOS CAMBIOS
+# ============================================================
+
+if estado == "resultado" and len(mi_equipo) == 11:
+    puntos_actuales = puntos_guardados_usuario_jornada(sala, player_id, jornada_actual)
+    st.divider()
+    st.subheader("⭐ PUNTOS DE TUS JUGADORES")
+    st.caption("Los puntos de la jornada quedan guardados. Los cambios de plantilla no modifican los puntos ya obtenidos.")
+
+    for pid in sorted(mi_equipo, key=lambda x: puntos_actuales.get(x, 0), reverse=True):
+        jugador = jugadores.get(pid)
+        if not jugador:
+            continue
+        puntos = puntos_actuales.get(pid, 0.0)
+        st.markdown(
+            f'<div class="market-row"><div class="shirt-wrap">{camiseta_svg(jugador.get("equipo",""),True)}</div>'
+            f'<div><div class="market-name">{jugador.get("nombre","")}</div>'
+            f'<div class="market-team">{jugador.get("equipo","")} · {NOMBRES_POSICION.get(jugador.get("posicion",""),jugador.get("posicion",""))}</div></div>'
+            f'<div class="market-team">Puntos de esta jornada</div>'
+            f'<div class="market-price">⭐ {puntos:.2f}</div></div>',
+            unsafe_allow_html=True,
+        )
 
 # ============================================================
 # PARTIDA / RESULTADOS
