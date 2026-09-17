@@ -1,6 +1,4 @@
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-
 from firebase import (
     crear_sala,
     obtener_sala,
@@ -37,12 +35,11 @@ st.markdown("""
 [data-testid="stSidebar"] {
     background: #08152b;
 }
-h1,h2,h3,h4,h5,h6,p,label,span {
-    color: white !important;
-}
+h1,h2,h3,h4,h5,h6,p,span{color:#fff!important}
+label{color:black!important}
 .stButton > button {
     background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
-    color: white !important;
+    color: black !important;
     border: 1px solid #6366f1 !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
@@ -54,11 +51,11 @@ h1,h2,h3,h4,h5,h6,p,label,span {
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div {
     background: #101f3d !important;
-    color: white !important;
+    color: black !important;
     border: 1px solid #31518a !important;
 }
 input {
-    color: white !important;
+    color: black !important;
 }
 .admin-box,.player-row {
     background: linear-gradient(145deg, #122957, #0b1835);
@@ -88,8 +85,6 @@ if "admin_codigo" not in st.session_state:
 if "admin_nombre" not in st.session_state:
     st.session_state.admin_nombre = None
 
-if st.session_state.admin_logged:
-    st_autorefresh(interval=3000, limit=None, key="admin_autorefresh")
 
 # =========================
 # CREAR SALA

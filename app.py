@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -59,9 +58,18 @@ st.markdown(
         color:#111827!important;
         border:1px solid #7aa2e8!important;
     }
+    div[data-baseweb="select"] div,
     div[data-baseweb="select"] span,
-    div[data-baseweb="select"] input {
+    div[data-baseweb="select"] p,
+    div[data-baseweb="select"] input,
+    div[data-baseweb="select"] [role="combobox"] {
         color:#111827!important;
+        -webkit-text-fill-color:#111827!important;
+        opacity:1!important;
+    }
+    div[data-baseweb="select"] svg {
+        color:#111827!important;
+        fill:#111827!important;
     }
     /* Menú desplegable abierto */
     [role="listbox"], [role="option"],
@@ -117,9 +125,6 @@ st.markdown(
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
     .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
     .stButton>button:hover{background:linear-gradient(135deg,#3b82f6,#6366f1)!important;border-color:#bfdbfe!important}
-    .selected-banner{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;background:#16a34a;color:#fff!important;border:2px solid #86efac;border-radius:12px;padding:12px 22px;font-weight:900;font-size:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:selected-fade 2s ease-in-out forwards}
-    .selected-banner *{color:#fff!important}
-    @keyframes selected-fade{0%{opacity:0;transform:translate(-50%,20px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,10px)}}
     /* Los controles de entrada permanecen con texto negro */
     input{color:#111827!important}
     /* Filtros: fondo claro y texto negro para que Buscar jugador y Posición se lean bien */
@@ -508,21 +513,6 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-# Aviso temporal cuando se añade un jugador.
-if st.session_state.get("jugador_seleccionado_mensaje"):
-    if time.time() - st.session_state.get("jugador_seleccionado_ts", 0) < 2:
-        st.markdown(
-            f"""
-            <div class="selected-banner">
-                ✅ {st.session_state["jugador_seleccionado_mensaje"]}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.session_state.pop("jugador_seleccionado_mensaje", None)
-        st.session_state.pop("jugador_seleccionado_ts", None)
-
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
@@ -635,17 +625,13 @@ if estado == "esperando" and not seleccion_abierta:
     st.markdown(
         """
         <div class="tutorial-box">
-            <div class="tutorial-title">📖 MINI TUTORIAL — ¿CÓMO JUGAR?</div>
-            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección. Cuando se abra, aparecerá el mercado de jugadores.</div>
-            <div class="tutorial-step"><b>2.</b> Tienes <b>615M$</b> para formar tu plantilla.</div>
-            <div class="tutorial-step"><b>3.</b> Usa <b>Buscar jugador</b> para encontrar rápidamente al jugador que quieres.</div>
-            <div class="tutorial-step"><b>4.</b> Usa <b>Posición</b> y <b>Selección</b> para filtrar los jugadores disponibles.</div>
-            <div class="tutorial-step"><b>5.</b> Con el botón <b>＋ AÑADIR</b> seleccionas jugadores y los incorporas a tu alineación.</div>
-            <div class="tutorial-step"><b>6.</b> Si te equivocas, usa <b>🗑️ QUITAR</b> dentro de tu alineación para sacar un jugador.</div>
-            <div class="tutorial-step"><b>7.</b> Debes completar <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b> (4-3-3).</div>
-            <div class="tutorial-step"><b>8.</b> ⚔️ <b>Ataque</b> = capacidad ofensiva · 🛡️ <b>Defensa</b> = capacidad defensiva.</div>
-            <div class="tutorial-step"><b>9.</b> Cuando termines, pulsa <b>✓ GUARDAR ALINEACIÓN</b> y después <b>✅ ESTOY LISTO</b>.</div>
-            <div class="tutorial-step"><b>10.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>. Los puntos históricos no cambian.</div>
+            <div class="tutorial-title">📖 MINI TUTORIAL</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
+            <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva.</div>
+            <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -665,21 +651,6 @@ if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
         '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div class="tutorial-box">
-            <div class="tutorial-title">📖 MINI TUTORIAL</div>
-            <div class="tutorial-step"><b>🔎 Buscar jugador:</b> escribe el nombre para encontrarlo.</div>
-            <div class="tutorial-step"><b>📍 Posición / Selección:</b> usa los filtros para ver solo los jugadores que buscas.</div>
-            <div class="tutorial-step"><b>＋ AÑADIR:</b> pulsa este botón para seleccionar al jugador y añadirlo a tu alineación.</div>
-            <div class="tutorial-step"><b>🗑️ QUITAR:</b> si te equivocas, quita al jugador desde tu propia alineación.</div>
-            <div class="tutorial-step"><b>✓ GUARDAR ALINEACIÓN:</b> úsalo cuando hayas completado el 4-3-3.</div>
-            <div class="tutorial-step"><b>✅ ESTOY LISTO:</b> avisa al administrador de que ya terminaste.</div>
-        </div>
-        """,
         unsafe_allow_html=True,
     )
 
@@ -748,12 +719,8 @@ if seleccion_abierta and not ya_seleccionado:
                 nuevo=list(mi_equipo); nuevo.append(pid)
                 nuevo_valor=valor_equipo(nuevo)
                 ok,mensaje=guardar_equipo(codigo,player_id,nuevo,PRESUPUESTO-nuevo_valor)
-                if not ok:
-                    st.error(mensaje)
-                else:
-                    st.session_state["jugador_seleccionado_mensaje"] = f"Jugador seleccionado: {nombre}"
-                    st.session_state["jugador_seleccionado_ts"] = time.time()
-                    st.rerun()
+                if not ok: st.error(mensaje)
+                else: st.rerun()
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
