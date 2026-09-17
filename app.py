@@ -84,6 +84,22 @@ st.markdown(
     .slot{background:#0d2345;border:1px dashed #4167a7;border-radius:11px;padding:6px;margin-bottom:6px;text-align:center;min-height:62px}.slot-filled{border-style:solid;background:linear-gradient(145deg,#15366c,#0d2143)}
     .slot-name{font-size:11px;font-weight:800;line-height:1.1}.slot-team{color:#93c5fd;font-size:9px;margin-top:2px}
     .budget-card{background:linear-gradient(135deg,#0e326d,#182e72);border:1px solid #4f7cff;border-radius:14px;padding:12px;margin-top:10px}
+    .stats-legend{display:flex;gap:18px;flex-wrap:wrap;background:#eaf2ff;border:1px solid #7aa2e8;border-radius:12px;padding:10px 14px;margin:10px 0 14px;color:#111827!important;font-size:13px}
+    .stats-legend span,.stats-legend b{color:#111827!important}
+    @media (max-width: 768px){
+        .hero-title{font-size:24px}
+        .hero-sub{font-size:12px}
+        .market-head{grid-template-columns:42px 1.5fr 80px 65px;gap:5px;font-size:9px;padding-left:5px;padding-right:5px}
+        .market-row{grid-template-columns:42px 1.5fr 80px 65px;gap:5px;padding:7px 5px}
+        .market-name{font-size:12px}
+        .market-team{font-size:10px}
+        .market-price{font-size:12px}
+        .shirt{width:42px;height:48px}
+        .mini-shirt{width:34px;height:39px}
+        .slot{padding:5px}
+        .slot-name{font-size:10px}
+        .stats-legend{font-size:12px;gap:8px}
+    }
     .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
     .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
@@ -111,22 +127,22 @@ def dinero(valor):
     try:
         valor = float(valor)
     except (TypeError, ValueError):
-        return "0"
+        return "0$"
 
     signo = "-" if valor < 0 else ""
     valor = abs(valor)
 
     if valor >= 1_000_000:
         n = valor / 1_000_000
-        texto = f"{int(n)}M" if n.is_integer() else f"{n:.1f}M"
+        texto = f"{int(n)}M$" if n.is_integer() else f"{n:.1f}M$"
         return signo + texto
 
     if valor >= 1_000:
         n = valor / 1_000
-        texto = f"{int(n)}K" if n.is_integer() else f"{n:.1f}K"
+        texto = f"{int(n)}K$" if n.is_integer() else f"{n:.1f}K$"
         return signo + texto
 
-    return signo + str(int(valor))
+    return signo + f"{int(valor)}$"
 
 
 def contar_posiciones(equipo):
@@ -203,6 +219,83 @@ def mostrar_alineacion(equipo, titulo="TU ALINEACIÓN"):
                     unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="slot"><div style="font-size:22px">👕</div><div class="slot-name">{NOMBRES_POSICION.get(pos,pos)} vacío</div></div>',unsafe_allow_html=True)
+
+
+def mostrar_alineacion_interactiva(equipo, codigo, player_id):
+    """Muestra la alineación y permite quitar jugadores desde la propia alineación."""
+    st.markdown(
+        '<div class="lineup-panel">'
+        '<div class="lineup-title">👕 TU ALINEACIÓN</div>'
+        '<div class="formation">1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    posiciones = {p: [] for p in FORMACION}
+    for pid in equipo or []:
+        if pid in jugadores:
+            posiciones[jugadores[pid]["posicion"]].append(pid)
+
+    nombres = {
+        "POR": "🧤 PORTERO",
+        "DEF": "🛡️ DEFENSAS",
+        "MED": "⚙️ MEDIOCAMPISTAS",
+        "DEL": "⚽ DELANTEROS",
+    }
+
+    for pos in ["POR", "DEF", "MED", "DEL"]:
+        st.markdown(
+            f'<div class="position-title">{nombres[pos]} '
+            f'({len(posiciones[pos])}/{FORMACION[pos]})</div>',
+            unsafe_allow_html=True,
+        )
+
+        ids = posiciones[pos]
+        cantidad = max(FORMACION[pos], len(ids))
+
+        for inicio in range(0, cantidad, 4):
+            fila = ids[inicio:inicio + 4]
+            cols = st.columns(min(4, max(1, len(fila))))
+
+            for col, pid in zip(cols, fila):
+                j = jugadores[pid]
+                with col:
+                    st.markdown(
+                        f'<div class="slot slot-filled">'
+                        f'{camiseta_svg(j.get("equipo",""), True)}'
+                        f'<div class="slot-name">{j["nombre"]}</div>'
+                        f'<div class="slot-team">{j["equipo"]} · {dinero(j.get("precio",0))}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button(
+                        "🗑️ QUITAR",
+                        key=f"quitar_alineacion_{pid}",
+                        use_container_width=True,
+                    ):
+                        nuevo_equipo = [x for x in equipo if x != pid]
+                        nuevo_valor = valor_equipo(nuevo_equipo)
+                        nuevo_restante = PRESUPUESTO - nuevo_valor
+
+                        ok, mensaje = guardar_equipo(
+                            codigo,
+                            player_id,
+                            nuevo_equipo,
+                            nuevo_restante,
+                        )
+
+                        if not ok:
+                            st.error(mensaje)
+                        else:
+                            st.rerun()
+
+        if not ids:
+            st.markdown(
+                f'<div class="slot"><div style="font-size:22px">👕</div>'
+                f'<div class="slot-name">{NOMBRES_POSICION.get(pos,pos)} vacío</div></div>',
+                unsafe_allow_html=True,
+            )
+
 
 def limpiar_sesion():
     for clave in [
@@ -408,11 +501,23 @@ if estado == "esperando" and not seleccion_abierta:
 if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
-        '<div class="hero-sub">Arma tu 4-3-3 · 1 POR + 4 DEF + 3 MED + 3 DEL · Presupuesto máximo 540M</div></div>',
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 540M$</div></div>',
         unsafe_allow_html=True,
     )
 
-    col_filtros, col_mercado, col_alineacion = st.columns([0.95, 2.0, 1.05], gap="small")
+    # La alineación queda arriba para que se vea fácilmente tanto en computador
+    # como en celular. Los botones para quitar están dentro de la propia alineación.
+    mostrar_alineacion_interactiva(mi_equipo, codigo, player_id)
+
+    st.markdown(
+        '<div class="stats-legend">'
+        '<span>⚔️ <b>ATAQUE</b> = capacidad ofensiva</span>'
+        '<span>🛡️ <b>DEFENSA</b> = capacidad defensiva</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    col_filtros, col_mercado = st.columns([0.95, 2.0], gap="small")
 
     with col_filtros:
         st.markdown('<div class="section-title">🔎 FILTRAR JUGADORES</div>', unsafe_allow_html=True)
@@ -424,7 +529,7 @@ if seleccion_abierta and not ya_seleccionado:
         filtro_eq=st.selectbox("SELECCIÓN", ["Todos"]+equipos, key="filtro_equipo")
         precios=[float(j.get("precio",0)) for j in jugadores.values()]
         precio_max=max(precios) if precios else PRESUPUESTO
-        filtro_precio=st.slider("PRECIO MÁXIMO",0.0,float(max(540_000_000,precio_max)),float(max(540_000_000,precio_max)),1_000_000.0,key="filtro_precio")
+        filtro_precio=st.slider("PRECIO MÁXIMO (M$)",0.0,float(max(540_000_000,precio_max)),float(max(540_000_000,precio_max)),1_000_000.0,key="filtro_precio")
         st.markdown(
             f'<div class="filter-card"><div class="small">PRESUPUESTO RESTANTE</div>'
             f'<div style="font-size:24px;font-weight:900">{dinero(PRESUPUESTO-valor_equipo(mi_equipo))}</div></div>',
@@ -461,78 +566,45 @@ if seleccion_abierta and not ya_seleccionado:
                 if not ok: st.error(mensaje)
                 else: st.rerun()
 
-        if mostrados==0: st.info("No hay jugadores que coincidan con los filtros.")
+        if mostrados==0:
+            st.info("No hay jugadores que coincidan con los filtros.")
 
-    with col_alineacion:
-        st.markdown('<div class="lineup-panel">',unsafe_allow_html=True)
-        mostrar_alineacion(mi_equipo)
-        valor=valor_equipo(mi_equipo)
-        restante=PRESUPUESTO-valor
-        posiciones=contar_posiciones(mi_equipo)
-        st.markdown(f'<div class="budget-card"><div class="budget-label">Presupuesto restante</div><div class="budget-value">{dinero(restante)}</div></div>',unsafe_allow_html=True)
-        st.caption(f"👥 {len(mi_equipo)}/11 · POR {posiciones['POR']}/1 · DEF {posiciones['DEF']}/4 · MED {posiciones['MED']}/3 · DEL {posiciones['DEL']}/3")
-        puede_guardar=plantilla_completa(mi_equipo) and valor<=PRESUPUESTO
-        if st.button("✓ GUARDAR ALINEACIÓN",disabled=not puede_guardar,use_container_width=True,key="guardar_alineacion_principal"):
-            ok,mensaje=guardar_equipo(codigo,player_id,mi_equipo,restante)
-            if not ok: st.error(mensaje)
-            else: st.rerun()
-        if not plantilla_completa(mi_equipo):
-            st.caption("Completa: 1 POR · 4 DEF · 3 MED · 3 DEL.")
-        st.markdown('</div>',unsafe_allow_html=True)
+    # Presupuesto y guardado quedan debajo de la selección, sin crear una
+    # segunda lista de jugadores.
+    valor=valor_equipo(mi_equipo)
+    restante=PRESUPUESTO-valor
+    posiciones=contar_posiciones(mi_equipo)
 
-# ============================================================
-# QUITAR JUGADORES DURANTE LA SELECCIÓN
-# ============================================================
-
-# Mientras la selección está abierta y la plantilla aún no se ha
-# guardado definitivamente, el jugador puede quitar fichajes.
-# Al quitarlo, el presupuesto disponible aumenta automáticamente
-# porque se vuelve a calcular sobre los 540M.
-if seleccion_abierta and not ya_seleccionado and mi_equipo:
-    st.divider()
-    st.subheader("🗑️ QUITAR JUGADORES")
-
+    st.markdown(
+        f'<div class="budget-card">'
+        f'<div class="budget-label">PRESUPUESTO RESTANTE</div>'
+        f'<div class="budget-value">{dinero(restante)}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
     st.caption(
-        "Puedes quitar un jugador que hayas comprado. "
-        "El dinero vuelve automáticamente a tu presupuesto."
+        f"👥 {len(mi_equipo)}/11 · "
+        f"1 PORTERO {posiciones['POR']}/1 · "
+        f"4 DEFENSAS {posiciones['DEF']}/4 · "
+        f"3 MEDIOCAMPISTAS {posiciones['MED']}/3 · "
+        f"3 DELANTEROS {posiciones['DEL']}/3"
     )
 
-    for pid in list(mi_equipo):
-        jugador_quitar = jugadores[pid]
-        col_info, col_quitar = st.columns([4, 1])
+    puede_guardar=plantilla_completa(mi_equipo) and valor<=PRESUPUESTO
+    if st.button(
+        "✓ GUARDAR ALINEACIÓN",
+        disabled=not puede_guardar,
+        use_container_width=True,
+        key="guardar_alineacion_principal",
+    ):
+        ok,mensaje=guardar_equipo(codigo,player_id,mi_equipo,restante)
+        if not ok:
+            st.error(mensaje)
+        else:
+            st.rerun()
 
-        with col_info:
-            st.write(
-                f"**{jugador_quitar['nombre']}** · "
-                f"{NOMBRES_POSICION.get(jugador_quitar.get('posicion',''), jugador_quitar.get('posicion',''))} · "
-                f"💰 {dinero(jugador_quitar.get('precio', 0))}"
-            )
-
-        with col_quitar:
-            if st.button(
-                "🗑️ QUITAR",
-                key=f"quitar_jugador_{pid}",
-                use_container_width=True,
-            ):
-                nuevo_equipo = [x for x in mi_equipo if x != pid]
-                nuevo_valor = valor_equipo(nuevo_equipo)
-                nuevo_restante = PRESUPUESTO - nuevo_valor
-
-                ok, mensaje = guardar_equipo(
-                    codigo,
-                    player_id,
-                    nuevo_equipo,
-                    nuevo_restante,
-                )
-
-                if not ok:
-                    st.error(mensaje)
-                else:
-                    st.success(
-                        f"Se ha quitado a {jugador_quitar['nombre']}. "
-                        f"Has recuperado {dinero(jugador_quitar.get('precio', 0))}."
-                    )
-                    st.rerun()
+    if not plantilla_completa(mi_equipo):
+        st.caption("Completa: 1 portero · 4 defensas · 3 mediocampistas · 3 delanteros.")
 
 # ============================================================
 # ALINEACIÓN YA GUARDADA: BLOQUEADA
