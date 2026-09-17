@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -111,6 +112,8 @@ st.markdown(
         .slot-name{font-size:10px}
         .stats-legend{font-size:12px;gap:8px}
     }
+    .selection-toast{background:#d1fae5;border:1px solid #10b981;color:#065f46!important;border-radius:10px;padding:12px 16px;font-weight:800;text-align:center;margin:8px 0 12px;animation:selectionFade 2s forwards;}
+    @keyframes selectionFade{0%,85%{opacity:1}100%{opacity:0}}
     .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
     .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
@@ -713,10 +716,23 @@ if seleccion_abierta and not ya_seleccionado:
                 if not ok:
                     st.error(mensaje)
                 else:
-                    st.success(f"✅ Jugador seleccionado: {jugador.get('nombre', 'Jugador')}")
+                    st.session_state["jugador_seleccionado_mensaje"] = jugador.get("nombre", "Jugador")
+                    st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
+
+    # Aviso temporal: aparece en verde durante exactamente 2 segundos.
+    mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje")
+    mensaje_hasta = st.session_state.get("jugador_seleccionado_hasta", 0)
+    if mensaje_nombre and time.time() < mensaje_hasta:
+        st.markdown(
+            f"""<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>""",
+            unsafe_allow_html=True,
+        )
+    elif mensaje_nombre:
+        st.session_state.pop("jugador_seleccionado_mensaje", None)
+        st.session_state.pop("jugador_seleccionado_hasta", None)
 
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
