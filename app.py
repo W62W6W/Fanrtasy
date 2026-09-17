@@ -21,7 +21,7 @@ st.set_page_config(
     layout="wide",
 )
 
-PRESUPUESTO = 540_000_000
+PRESUPUESTO = 615_000_000
 MAX_JUGADORES = 30
 FORMACION = {"POR": 1, "DEF": 4, "MED": 3, "DEL": 3}
 NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", "DEL": "Delantero"}
@@ -501,7 +501,7 @@ if estado == "esperando" and not seleccion_abierta:
 if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
-        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 540M$</div></div>',
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -529,7 +529,13 @@ if seleccion_abierta and not ya_seleccionado:
         filtro_eq=st.selectbox("SELECCIÓN", ["Todos"]+equipos, key="filtro_equipo")
         precios=[float(j.get("precio",0)) for j in jugadores.values()]
         precio_max=max(precios) if precios else PRESUPUESTO
-        filtro_precio=st.slider("PRECIO MÁXIMO (M$)",0.0,float(max(540_000_000,precio_max)),float(max(540_000_000,precio_max)),1_000_000.0,key="filtro_precio")
+        filtro_precio=st.select_slider(
+            "PRECIO MÁXIMO",
+            options=list(range(0, 616)),
+            value=615,
+            format_func=lambda millones: dinero(float(millones) * 1_000_000),
+            key="filtro_precio",
+        )
         st.markdown(
             f'<div class="filter-card"><div class="small">PRESUPUESTO RESTANTE</div>'
             f'<div style="font-size:24px;font-weight:900">{dinero(PRESUPUESTO-valor_equipo(mi_equipo))}</div></div>',
@@ -548,7 +554,7 @@ if seleccion_abierta and not ya_seleccionado:
             precio=float(jugador.get("precio",0) or 0)
             if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
             if filtro_eq!="Todos" and eq!=filtro_eq: continue
-            if precio>filtro_precio: continue
+            if precio>filtro_precio*1_000_000: continue
             if filtro_busqueda and filtro_busqueda.lower() not in nombre.lower(): continue
             mostrados+=1
             jugador_html(jugador)
@@ -612,8 +618,8 @@ if seleccion_abierta and not ya_seleccionado:
 
 elif ya_seleccionado:
     st.success(
-        "🔒 Tu alineación está guardada y bloqueada. "
-        "No puedes cambiar jugadores durante el torneo."
+        "✅ Tu alineación está guardada. "
+        "Después de cada jornada puedes hacer hasta 3 cambios de jugadores."
     )
 
     mostrar_alineacion(mi_equipo)
@@ -748,7 +754,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
             )
 
             if presupuesto_nuevo < 0:
-                st.error("No puedes superar los 540M de presupuesto.")
+                st.error("No puedes superar los 615M de presupuesto.")
             elif st.button(
                 "🔄 CONFIRMAR CAMBIO",
                 key=f"confirmar_cambio_{jornada_actual}_{cambios_usados}",
