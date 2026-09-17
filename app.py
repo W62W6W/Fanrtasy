@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -714,22 +713,10 @@ if seleccion_abierta and not ya_seleccionado:
                 if not ok:
                     st.error(mensaje)
                 else:
-                    st.session_state["jugador_anadido_mensaje"] = f"✅ Jugador seleccionado: {jugador['nombre']}"
-                    st.session_state["jugador_anadido_hasta"] = time.time() + 3
-                    st.rerun()
+                    st.success(f"✅ Jugador seleccionado: {jugador.get('nombre', 'Jugador')}")
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
-
-    # Aviso temporal después de añadir un jugador.
-    # Se guarda en session_state para que sobreviva al st.rerun() provocado por el botón.
-    mensaje_anadido = st.session_state.get("jugador_anadido_mensaje")
-    mensaje_hasta = st.session_state.get("jugador_anadido_hasta", 0)
-    if mensaje_anadido and time.time() < mensaje_hasta:
-        st.success(mensaje_anadido)
-    elif mensaje_anadido:
-        st.session_state.pop("jugador_anadido_mensaje", None)
-        st.session_state.pop("jugador_anadido_hasta", None)
 
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
