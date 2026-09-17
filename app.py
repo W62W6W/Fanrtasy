@@ -63,11 +63,17 @@ st.markdown(
         color:#111827!important;
     }
     /* Menú desplegable abierto */
-    [role="listbox"], [role="option"] {
+    [role="listbox"], [role="option"],
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"] {
         background:#ffffff!important;
         color:#111827!important;
     }
     [role="option"] * {
+        color:#111827!important;
+    }
+    div[data-baseweb="popover"] *,
+    div[data-baseweb="menu"] * {
         color:#111827!important;
     }
     .hero{background:linear-gradient(135deg,#0b2d69,#153b88 55%,#312e81);border:1px solid #4f7cff;border-radius:18px;padding:18px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
@@ -84,6 +90,11 @@ st.markdown(
     .slot{background:#0d2345;border:1px dashed #4167a7;border-radius:11px;padding:6px;margin-bottom:6px;text-align:center;min-height:62px}.slot-filled{border-style:solid;background:linear-gradient(145deg,#15366c,#0d2143)}
     .slot-name{font-size:11px;font-weight:800;line-height:1.1}.slot-team{color:#93c5fd;font-size:9px;margin-top:2px}
     .budget-card{background:linear-gradient(135deg,#0e326d,#182e72);border:1px solid #4f7cff;border-radius:14px;padding:12px;margin-top:10px}
+    .tutorial-box{background:linear-gradient(145deg,#eaf2ff,#ffffff);border:1px solid #7aa2e8;border-radius:14px;padding:16px 18px;margin:12px 0;color:#111827!important;box-shadow:0 5px 18px rgba(0,0,0,.12)}
+    .tutorial-title{font-size:18px;font-weight:900;color:#111827!important;margin-bottom:9px}
+    .tutorial-step{font-size:13px;color:#111827!important;margin:6px 0;line-height:1.35}
+    .tutorial-step b{color:#111827!important}
+    .slot-points{font-size:12px;font-weight:900;color:#fbbf24!important;margin-top:5px}
     .stats-legend{display:flex;gap:18px;flex-wrap:wrap;background:#eaf2ff;border:1px solid #7aa2e8;border-radius:12px;padding:10px 14px;margin:10px 0 14px;color:#111827!important;font-size:13px}
     .stats-legend span,.stats-legend b{color:#111827!important}
     @media (max-width: 768px){
@@ -297,6 +308,115 @@ def mostrar_alineacion_interactiva(equipo, codigo, player_id):
             )
 
 
+
+def mostrar_desglose_alineacion(equipo, puntos, detalles, jornada, guardado=True):
+    """Muestra puntos + desglose en la misma estructura visual de la alineación."""
+    st.subheader("📊 TUS JUGADORES")
+    st.caption(
+        "Aquí ves los puntos y el desglose de cada jugador en la misma alineación. "
+        "Los puntos históricos permanecen guardados aunque hagas cambios."
+    )
+
+    posiciones = {p: [] for p in FORMACION}
+    for pid in equipo or []:
+        if pid in jugadores:
+            posiciones[jugadores[pid]["posicion"]].append(pid)
+
+    nombres = {
+        "POR": "🧤 PORTERO",
+        "DEF": "🛡️ DEFENSAS",
+        "MED": "⚙️ MEDIOCAMPISTAS",
+        "DEL": "⚽ DELANTEROS",
+    }
+
+    etiquetas = {
+        "minutos": "Minutos",
+        "minutos_jugados": "Minutos",
+        "goles": "Goles",
+        "asistencias": "Asistencias",
+        "asistencia": "Asistencias",
+        "tiros_a_puerta": "Tiros a puerta",
+        "shots_on_target": "Tiros a puerta",
+        "regates": "Regates",
+        "dribbles": "Regates",
+        "intercepciones": "Intercepciones",
+        "duelos_ganados": "Duelos ganados",
+        "recuperaciones": "Recuperaciones",
+        "despejes": "Despejes",
+        "paradas": "Paradas",
+        "saves": "Paradas",
+        "balones_perdidos": "Balones perdidos",
+        "faltas": "Faltas",
+        "amarillas": "Tarjetas amarillas",
+        "tarjetas_amarillas": "Tarjetas amarillas",
+        "rojas": "Tarjetas rojas",
+        "tarjetas_rojas": "Tarjetas rojas",
+        "portería_a_cero": "Portería a cero",
+        "clean_sheet": "Portería a cero",
+    }
+
+    orden = list(etiquetas.keys())
+
+    for pos in ["POR", "DEF", "MED", "DEL"]:
+        st.markdown(
+            f'<div class="position-title">{nombres[pos]} '
+            f'({len(posiciones[pos])}/{FORMACION[pos]})</div>',
+            unsafe_allow_html=True,
+        )
+
+        ids = posiciones[pos]
+        for inicio in range(0, len(ids), 4):
+            fila = ids[inicio:inicio + 4]
+            cols = st.columns(min(4, len(fila)))
+
+            for col, pid in zip(cols, fila):
+                jugador = jugadores[pid]
+                pts = float((puntos or {}).get(pid, 0.0))
+                detalle = (detalles or {}).get(pid, {}) or {}
+
+                with col:
+                    st.markdown(
+                        f'<div class="slot slot-filled">'
+                        f'{camiseta_svg(jugador.get("equipo",""), True)}'
+                        f'<div class="slot-name">{jugador["nombre"]}</div>'
+                        f'<div class="slot-team">{jugador["equipo"]} · '
+                        f'{dinero(jugador.get("precio",0))}</div>'
+                        f'<div class="slot-points">⭐ {pts:.2f} PTS</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    with st.expander("📊 VER DESGLOSE", expanded=False):
+                        if detalle:
+                            claves = []
+                            for clave in orden:
+                                if clave in detalle and clave not in claves:
+                                    claves.append(clave)
+                            for clave in detalle:
+                                if clave not in claves:
+                                    claves.append(clave)
+
+                            for concepto in claves:
+                                valor = detalle.get(concepto, 0)
+                                try:
+                                    valor_num = float(valor)
+                                    st.write(
+                                        f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
+                                        f"{valor_num:+.2f}"
+                                    )
+                                except (TypeError, ValueError):
+                                    st.write(
+                                        f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
+                                        f"{valor}"
+                                    )
+                        elif not guardado:
+                            st.info(
+                                "El desglose de esta jornada todavía no está guardado."
+                            )
+                        else:
+                            st.write("Sin puntos en esta jornada.")
+
+
 def limpiar_sesion():
     for clave in [
         "rol", "codigo_sala", "player_id", "nombre_usuario",
@@ -387,9 +507,13 @@ if "player_id" not in st.session_state:
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
-# Mientras un usuario está dentro de una sala, la pantalla se
-# actualiza cada 3 segundos para detectar nuevos jugadores,
-# cambios del administrador, jugadores listos y resultados.
+# La página del jugador se actualiza cada 3 segundos durante toda la sala.
+# Esto permite detectar automáticamente cuando el administrador:
+# - abre/cierra la selección
+# - inicia la partida
+# - simula una jornada
+# - publica los resultados
+# - cambia el estado de la sala
 if st.session_state.get("rol") == "player":
     st_autorefresh(
         interval=3000,
@@ -488,6 +612,22 @@ ya_seleccionado = len(mi_equipo) == 11
 
 if estado == "esperando" and not seleccion_abierta:
     st.info("⏳ Esperando a que el administrador abra la selección.")
+
+    st.markdown(
+        """
+        <div class="tutorial-box">
+            <div class="tutorial-title">📖 MINI TUTORIAL</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
+            <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva.</div>
+            <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.divider()
     st.subheader("👥 Jugadores conectados")
     for jugador in jugadores_sala.values():
@@ -529,10 +669,11 @@ if seleccion_abierta and not ya_seleccionado:
         filtro_eq=st.selectbox("SELECCIÓN", ["Todos"]+equipos, key="filtro_equipo")
         precios=[float(j.get("precio",0)) for j in jugadores.values()]
         precio_max=max(precios) if precios else PRESUPUESTO
+        precio_max_millones = int(max(precios) / 1_000_000) if precios else 615
         filtro_precio=st.select_slider(
             "PRECIO MÁXIMO",
-            options=list(range(0, 616)),
-            value=615,
+            options=list(range(0, precio_max_millones + 1)),
+            value=precio_max_millones,
             format_func=lambda millones: dinero(float(millones) * 1_000_000),
             key="filtro_precio",
         )
@@ -785,30 +926,6 @@ if estado == "resultado" and len(mi_equipo) == 11:
         st.success("🟢 Ya estás listo para la siguiente jornada.")
 
 # ============================================================
-# PUNTOS DE LOS JUGADORES DESPUÉS DE LOS CAMBIOS
-# ============================================================
-
-if estado == "resultado" and len(mi_equipo) == 11:
-    puntos_actuales = puntos_guardados_usuario_jornada(sala, player_id, jornada_actual)
-    st.divider()
-    st.subheader("⭐ PUNTOS DE TUS JUGADORES")
-    st.caption("Los puntos de la jornada quedan guardados. Los cambios de plantilla no modifican los puntos ya obtenidos.")
-
-    for pid in sorted(mi_equipo, key=lambda x: puntos_actuales.get(x, 0), reverse=True):
-        jugador = jugadores.get(pid)
-        if not jugador:
-            continue
-        puntos = puntos_actuales.get(pid, 0.0)
-        st.markdown(
-            f'<div class="market-row"><div class="shirt-wrap">{camiseta_svg(jugador.get("equipo",""),True)}</div>'
-            f'<div><div class="market-name">{jugador.get("nombre","")}</div>'
-            f'<div class="market-team">{jugador.get("equipo","")} · {NOMBRES_POSICION.get(jugador.get("posicion",""),jugador.get("posicion",""))}</div></div>'
-            f'<div class="market-team">Puntos de esta jornada</div>'
-            f'<div class="market-price">⭐ {puntos:.2f}</div></div>',
-            unsafe_allow_html=True,
-        )
-
-# ============================================================
 # PARTIDA / RESULTADOS
 # ============================================================
 
@@ -899,98 +1016,13 @@ if estado in ("jugando", "resultado", "final"):
                 unsafe_allow_html=True,
             )
 
-        st.subheader("📊 Desglose de tus jugadores")
-        st.caption(
-            "Abre cada jugador para ver de dónde salen sus puntos: "
-            "goles, asistencias, tiros a puerta, regates, intercepciones, "
-            "duelos, recuperaciones, despejes, paradas, pérdidas, faltas, "
-            "tarjetas, minutos y portería a cero."
-        )
-
-        for pid in sorted(
+        mostrar_desglose_alineacion(
             mi_equipo,
-            key=lambda x: puntos_jornada.get(x, 0),
-            reverse=True,
-        ):
-            jugador = jugadores[pid]
-            puntos = float(puntos_jornada.get(pid, 0.0))
-
-            with st.expander(
-                f"{jugador['nombre']} · ⭐ {puntos:.2f}",
-                expanded=False,
-            ):
-                detalle = detalles.get(pid, {}) if isinstance(detalles, dict) else {}
-
-                if detalle:
-                    # Primero mostramos los conceptos que normalmente interesan
-                    # en el Fantasy, y después cualquier concepto adicional
-                    # que venga guardado por fantasy.py.
-                    orden = [
-                        "minutos", "minutos_jugados",
-                        "goles", "asistencias", "asistencia",
-                        "tiros_a_puerta", "shots_on_target",
-                        "regates", "dribbles",
-                        "intercepciones", "duelos_ganados",
-                        "recuperaciones", "despejes", "paradas", "saves",
-                        "balones_perdidos", "faltas",
-                        "amarillas", "tarjetas_amarillas",
-                        "rojas", "tarjetas_rojas",
-                        "portería_a_cero", "clean_sheet",
-                    ]
-                    etiquetas = {
-                        "minutos": "Minutos",
-                        "minutos_jugados": "Minutos",
-                        "goles": "Goles",
-                        "asistencias": "Asistencias",
-                        "asistencia": "Asistencias",
-                        "tiros_a_puerta": "Tiros a puerta",
-                        "shots_on_target": "Tiros a puerta",
-                        "regates": "Regates",
-                        "dribbles": "Regates",
-                        "intercepciones": "Intercepciones",
-                        "duelos_ganados": "Duelos ganados",
-                        "recuperaciones": "Recuperaciones",
-                        "despejes": "Despejes",
-                        "paradas": "Paradas",
-                        "saves": "Paradas",
-                        "balones_perdidos": "Balones perdidos",
-                        "faltas": "Faltas",
-                        "amarillas": "Tarjetas amarillas",
-                        "tarjetas_amarillas": "Tarjetas amarillas",
-                        "rojas": "Tarjetas rojas",
-                        "tarjetas_rojas": "Tarjetas rojas",
-                        "portería_a_cero": "Portería a cero",
-                        "clean_sheet": "Portería a cero",
-                    }
-
-                    claves = []
-                    for clave in orden:
-                        if clave in detalle and clave not in claves:
-                            claves.append(clave)
-                    for clave in detalle:
-                        if clave not in claves:
-                            claves.append(clave)
-
-                    for concepto in claves:
-                        valor = detalle.get(concepto, 0)
-                        try:
-                            valor_num = float(valor)
-                            st.write(
-                                f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
-                                f"{valor_num:+.2f}"
-                            )
-                        except (TypeError, ValueError):
-                            st.write(
-                                f"**{etiquetas.get(concepto, concepto.replace('_', ' ').title())}:** "
-                                f"{valor}"
-                            )
-                elif not detalles_guardados_disponibles:
-                    st.info(
-                        "El desglose de esta jornada todavía no está guardado "
-                        "en Firebase. Las jornadas nuevas sí quedarán guardadas."
-                    )
-                else:
-                    st.write("Sin puntos en esta jornada.")
+            puntos_jornada,
+            detalles,
+            jornada,
+            guardado=detalles_guardados_disponibles,
+        )
 
     # Clasificación de la sala.
     st.divider()
