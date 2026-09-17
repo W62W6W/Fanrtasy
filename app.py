@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -58,18 +59,9 @@ st.markdown(
         color:#111827!important;
         border:1px solid #7aa2e8!important;
     }
-    div[data-baseweb="select"] div,
     div[data-baseweb="select"] span,
-    div[data-baseweb="select"] p,
-    div[data-baseweb="select"] input,
-    div[data-baseweb="select"] [role="combobox"] {
+    div[data-baseweb="select"] input {
         color:#111827!important;
-        -webkit-text-fill-color:#111827!important;
-        opacity:1!important;
-    }
-    div[data-baseweb="select"] svg {
-        color:#111827!important;
-        fill:#111827!important;
     }
     /* Menú desplegable abierto */
     [role="listbox"], [role="option"],
@@ -719,11 +711,25 @@ if seleccion_abierta and not ya_seleccionado:
                 nuevo=list(mi_equipo); nuevo.append(pid)
                 nuevo_valor=valor_equipo(nuevo)
                 ok,mensaje=guardar_equipo(codigo,player_id,nuevo,PRESUPUESTO-nuevo_valor)
-                if not ok: st.error(mensaje)
-                else: st.rerun()
+                if not ok:
+                    st.error(mensaje)
+                else:
+                    st.session_state["jugador_anadido_mensaje"] = f"✅ Jugador seleccionado: {jugador['nombre']}"
+                    st.session_state["jugador_anadido_hasta"] = time.time() + 3
+                    st.rerun()
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
+
+    # Aviso temporal después de añadir un jugador.
+    # Se guarda en session_state para que sobreviva al st.rerun() provocado por el botón.
+    mensaje_anadido = st.session_state.get("jugador_anadido_mensaje")
+    mensaje_hasta = st.session_state.get("jugador_anadido_hasta", 0)
+    if mensaje_anadido and time.time() < mensaje_hasta:
+        st.success(mensaje_anadido)
+    elif mensaje_anadido:
+        st.session_state.pop("jugador_anadido_mensaje", None)
+        st.session_state.pop("jugador_anadido_hasta", None)
 
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
