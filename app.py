@@ -33,14 +33,22 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
-    /* Estado seleccionado: botón verde en el mismo sitio que AÑADIR. */
-    div[data-testid="stButton"]:has(button[aria-label*="SELECCIONADO"]) button,
-    div[data-testid="stButton"]:has(button[title*="SELECCIONADO"]) button {
+    /* Aviso verde en el mismo sitio que estaba el botón AÑADIR. */
+    .selected-player-button {
         background:#16a34a !important;
         color:#ffffff !important;
         border:1px solid #15803d !important;
-        opacity:1 !important;
+        border-radius:9px !important;
         font-weight:800 !important;
+        min-height:40px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        text-align:center !important;
+        box-sizing:border-box !important;
+        width:100% !important;
+        margin-bottom:10px !important;
     }
     .stApp {background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.18),transparent 30%),linear-gradient(180deg,#061226 0%,#08172f 52%,#0b1b38 100%);color:#fff}
     [data-testid="stHeader"]{background:rgba(0,0,0,0)}
@@ -646,8 +654,16 @@ if estado == "esperando" and not seleccion_abierta:
 # ============================================================
 # SELECCIÓN
 # ============================================================
+@st.fragment
+def mostrar_seleccion_fragmento(codigo, player_id):
+    sala_fragmento = obtener_sala(codigo) or {}
+    jugadores_sala_fragmento = sala_fragmento.get("jugadores") or {}
+    yo_fragmento = jugadores_sala_fragmento.get(player_id) or {}
+    mi_equipo = yo_fragmento.get("equipo") or []
+    ya_seleccionado = len(mi_equipo) == 11
+    if ya_seleccionado:
+        return
 
-if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
         '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
@@ -699,7 +715,7 @@ if seleccion_abierta and not ya_seleccionado:
         mostrados=0
 
         for pid,jugador in jugadores.items():
-            if pid in mi_equipo: continue
+            if pid in mi_equipo and pid != st.session_state.get("jugador_seleccionado_reciente"): continue
             pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
             precio=float(jugador.get("precio",0) or 0)
             if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
@@ -732,11 +748,9 @@ if seleccion_abierta and not ya_seleccionado:
                     st.error(mensaje)
                 else:
                     st.session_state["jugador_seleccionado_reciente"] = pid
-                    st.button(
-                        f"✓ {nombre.upper()} SELECCIONADO",
-                        key=f"selected_{pid}",
-                        disabled=True,
-                        use_container_width=True,
+                    st.markdown(
+                        f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
+                        unsafe_allow_html=True,
                     )
 
         if mostrados==0:
@@ -778,6 +792,10 @@ if seleccion_abierta and not ya_seleccionado:
 
     if not plantilla_completa(mi_equipo):
         st.caption("Completa: 1 portero · 4 defensas · 3 mediocampistas · 3 delanteros.")
+
+if seleccion_abierta and not ya_seleccionado:
+    mostrar_seleccion_fragmento(codigo, player_id)
+
 
 # ============================================================
 # ALINEACIÓN YA GUARDADA: BLOQUEADA
