@@ -113,7 +113,7 @@ st.markdown(
         .stats-legend{font-size:12px;gap:8px}
     }
 100%{opacity:0}}
-    .selection-toast{position:fixed;top:82px;left:50%;transform:translateX(-50%);z-index:999999;background:#d1fae5;border:2px solid #10b981;color:#065f46!important;border-radius:10px;padding:12px 18px;font-weight:800;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25);width:min(92vw,520px);pointer-events:none;}\n    .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
+    .selection-toast{position:fixed;top:82px;left:50%;transform:translateX(-50%);z-index:999999;background:#d1fae5;border:2px solid #10b981;color:#065f46!important;border-radius:10px;padding:12px 18px;font-weight:800;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25);width:min(92vw,520px);pointer-events:none;animation:selectionFade 2s forwards;}@keyframes selectionFade{0%,85%{opacity:1}100%{opacity:0}}\n    .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
     .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
     .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
@@ -506,44 +506,39 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-# Aviso temporal de selección: queda fijo arriba de la pantalla
-# durante exactamente 2 segundos después de añadir un jugador.
+# Aviso temporal de selección: aparece fijo arriba durante 2 segundos.
+# No bloquea la selección con time.sleep.
 if st.session_state.get("mostrar_aviso_seleccion"):
-    mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
-    st.markdown(
-        f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
-        unsafe_allow_html=True
-    )
-    time.sleep(2)
-    st.session_state.pop("jugador_seleccionado_mensaje", None)
-    st.session_state.pop("mostrar_aviso_seleccion", None)
-    st.rerun()
+    if time.time() < st.session_state.get("jugador_seleccionado_hasta", 0):
+        mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
+        st.markdown(
+            f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.session_state.pop("jugador_seleccionado_mensaje", None)
+        st.session_state.pop("jugador_seleccionado_hasta", None)
+        st.session_state.pop("mostrar_aviso_seleccion", None)
 
 # ============================================================
-# ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
+# ACTUALIZACIÓN AUTOMÁTICA DEL JUGADOR
 # ============================================================
-# Antes y durante la selección se actualiza cada 3 segundos.
-# Así los jugadores detectan automáticamente:
-# - cuando el administrador abre la sala/selección
-# - cuando otros jugadores se conectan
-# - cuando un jugador pulsa "ESTOY LISTO"
+# En app.py el jugador se actualiza cada 3 segundos durante TODA la partida.
+# Esto permite recibir automáticamente:
+# - apertura de la sala y selección
+# - cambios de alineación/listos
+# - inicio de jornadas
+# - resultados
+# - cambios en la clasificación
 #
-# Después de comenzar las jornadas NO hay refresco automático.
-# La siguiente actualización se hace al pulsar "SIMULAR JORNADA".
+# El administrador (admin.py) es quien tendrá el refresco limitado
+# a la fase de selección.
 if st.session_state.get("rol") == "player":
-    codigo_refresco = st.session_state.get("codigo_sala")
-    if codigo_refresco:
-        sala_refresco = obtener_sala(codigo_refresco)
-        if sala_refresco:
-            estado_refresco = sala_refresco.get("estado", "esperando")
-            seleccion_refresco = bool(sala_refresco.get("seleccion_abierta", False))
-
-            if estado_refresco == "esperando" or seleccion_refresco:
-                st_autorefresh(
-                    interval=3000,
-                    limit=None,
-                    key="fantasy_sala_autorefresh",
-                )
+    st_autorefresh(
+        interval=3000,
+        limit=None,
+        key="fantasy_jugador_autorefresh",
+    )
 
 # ============================================================
 # PANTALLA INICIAL — SOLO JUGADORES
@@ -740,6 +735,7 @@ if seleccion_abierta and not ya_seleccionado:
                     st.session_state["jugador_seleccionado_mensaje"] = jugador.get("nombre", "Jugador")
                     st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
                     st.session_state["mostrar_aviso_seleccion"] = True
+                st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
                     st.rerun()
 
         if mostrados==0:
