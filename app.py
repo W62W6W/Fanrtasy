@@ -33,6 +33,15 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
+    /* Estado seleccionado: botón verde en el mismo sitio que AÑADIR. */
+    div[data-testid="stButton"]:has(button[aria-label*="SELECCIONADO"]) button,
+    div[data-testid="stButton"]:has(button[title*="SELECCIONADO"]) button {
+        background:#16a34a !important;
+        color:#ffffff !important;
+        border:1px solid #15803d !important;
+        opacity:1 !important;
+        font-weight:800 !important;
+    }
     .stApp {background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.18),transparent 30%),linear-gradient(180deg,#061226 0%,#08172f 52%,#0b1b38 100%);color:#fff}
     [data-testid="stHeader"]{background:rgba(0,0,0,0)}
     [data-testid="stSidebar"]{background:#07152c;border-right:1px solid #244c91}
@@ -707,9 +716,13 @@ if seleccion_abierta and not ya_seleccionado:
             elif len(mi_equipo)>=11:
                 st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
             elif st.session_state.get("jugador_seleccionado_reciente") == pid:
-                st.markdown(
-                    f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
-                    unsafe_allow_html=True,
+                # Mantenemos un widget de Streamlit en el mismo lugar del botón
+                # para evitar que el navegador pierda el anclaje al hacer rerun.
+                st.button(
+                    f"✓ {nombre.upper()} SELECCIONADO",
+                    key=f"selected_{pid}",
+                    disabled=True,
+                    use_container_width=True,
                 )
             elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
                 nuevo=list(mi_equipo); nuevo.append(pid)
@@ -719,9 +732,11 @@ if seleccion_abierta and not ya_seleccionado:
                     st.error(mensaje)
                 else:
                     st.session_state["jugador_seleccionado_reciente"] = pid
-                    st.markdown(
-                        f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
-                        unsafe_allow_html=True,
+                    st.button(
+                        f"✓ {nombre.upper()} SELECCIONADO",
+                        key=f"selected_{pid}",
+                        disabled=True,
+                        use_container_width=True,
                     )
 
         if mostrados==0:
