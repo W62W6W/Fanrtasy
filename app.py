@@ -151,25 +151,34 @@ st.markdown(
     div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"]>div {background:#ffffff!important;color:#111827!important;border:1px solid #7aa2e8!important;}
     div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"] span {color:#111827!important;}
     
-/* Selectores POSICIÓN y SELECCIÓN: fondo blanco y texto negro */
-    /* POSICIÓN y SELECCIÓN: fondo blanco + texto negro */
+/* Selector POSICIÓN y SELECCIÓN: blanco real */
     div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-        background:#ffffff!important;
-        color:#111827!important;
+        background:#ffffff !important;
+        color:#111827 !important;
+        border:1px solid #7aa2e8 !important;
+        opacity:1 !important;
     }
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] input {
-        color:#111827!important;
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div * {
+        color:#111827 !important;
+        -webkit-text-fill-color:#111827 !important;
+    }
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] svg {
+        fill:#111827 !important;
+        color:#111827 !important;
     }
     div[data-baseweb="popover"],
     div[data-baseweb="menu"],
     [role="listbox"],
     [role="option"] {
-        background:#ffffff!important;
-        color:#111827!important;
+        background:#ffffff !important;
+        color:#111827 !important;
     }
     [role="option"] * {
-        color:#111827!important;
+        color:#111827 !important;
+        -webkit-text-fill-color:#111827 !important;
+    }
+    [role="option"]:hover {
+        background:#e5e7eb !important;
     }
 </style>
     """,
@@ -249,11 +258,14 @@ def camiseta_svg(equipo, mini=False):
     )
 
 def jugador_html(jugador):
+    # Estos valores salen directamente de datos.py.
+    ataque = jugador.get("ataque", "—")
+    defensa = jugador.get("defensa", "—")
     st.markdown(
         f'<div class="market-row"><div class="shirt-wrap">{camiseta_svg(jugador.get("equipo",""),True)}</div>'
         f'<div><div class="market-name">{jugador.get("nombre","")}</div>'
         f'<div class="market-team">{jugador.get("equipo","")} · {NOMBRES_POSICION.get(jugador.get("posicion",""),jugador.get("posicion",""))}</div></div>'
-        f'<div class="market-team">⚔️ {jugador.get("ataque",jugador.get("atk","—"))} &nbsp; 🛡️ {jugador.get("defensa",jugador.get("def","—"))}</div>'
+        f'<div class="market-team">⚔️ {ataque} &nbsp; 🛡️ {defensa}</div>'
         f'<div class="market-price">💰 {dinero(jugador.get("precio",0))}</div></div>',
         unsafe_allow_html=True,
     )
@@ -550,6 +562,7 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
+
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
@@ -646,6 +659,8 @@ jornada_actual = int(sala.get("jornada_actual", 0))
 mi_equipo = yo.get("equipo") or []
 ya_seleccionado = len(mi_equipo) == 11
 
+
+
 # Durante la selección, solo se refresca el fragmento de jugadores.
 # Así un clic en AÑADIR no provoca un rerun de toda la página y el navegador
 # conserva la posición del usuario. Fuera de selección, la sala se actualiza
@@ -669,13 +684,11 @@ if estado == "esperando" and not seleccion_abierta:
         """
         <div class="tutorial-box">
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
-            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la sala.</div>
             <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
             <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
-                        <div class="tutorial-step"><b>4.</b> ⚔️ <b>Ataque:</b> indica la capacidad ofensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de ataque.</div>
-            <div class="tutorial-step">🛡️ <b>Defensa:</b> indica la capacidad defensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de defensa.</div>
-            <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
-            <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+                        <div class="tutorial-step"><b>4.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>5.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -744,42 +757,72 @@ def mostrar_seleccion_fragmento():
             mostrados=0
 
             for pid,jugador in jugadores.items():
-                # El último jugador añadido se mantiene visible en verde incluso
-                # después de la actualización automática de la página.
-                jugador_reciente = st.session_state.get("jugador_seleccionado_reciente")
-                if pid in mi_equipo and pid != jugador_reciente: continue
-                pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
+                pos=jugador.get("posicion")
+                eq=jugador.get("equipo")
+                nombre=jugador.get("nombre","")
                 precio=float(jugador.get("precio",0) or 0)
-                if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
-                if filtro_eq!="Todos" and eq!=filtro_eq: continue
-                if precio>filtro_precio*1_000_000: continue
-                if filtro_busqueda and filtro_busqueda.lower() not in nombre.lower(): continue
+
+                if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo:
+                    continue
+                if filtro_eq!="Todos" and eq!=filtro_eq:
+                    continue
+                if precio>filtro_precio*1_000_000:
+                    continue
+                if filtro_busqueda and filtro_busqueda.lower() not in nombre.lower():
+                    continue
+
                 mostrados+=1
                 jugador_html(jugador)
 
-                if actuales.get(pos,0)>=FORMACION.get(pos,0):
-                    st.button(f"LÍMITE DE {NOMBRES_POSICION.get(pos,pos).upper()}",key=f"lim_{pid}",disabled=True,use_container_width=True)
-                elif valor_actual+precio>PRESUPUESTO:
-                    st.button("💰 PRESUPUESTO INSUFICIENTE",key=f"money_{pid}",disabled=True,use_container_width=True)
-                elif len(mi_equipo)>=11:
-                    st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
-                elif st.session_state.get("jugador_seleccionado_reciente") == pid:
+                # Una vez añadido realmente a la plantilla, permanece verde.
+                if pid in mi_equipo:
                     st.markdown(
-                        f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
+                        f'<div class="selected-player-button">✓ {nombre.upper()} AÑADIDO A TU PLANTILLA</div>',
                         unsafe_allow_html=True,
                     )
-                elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
-                    nuevo=list(mi_equipo); nuevo.append(pid)
+                    continue
+
+                if actuales.get(pos,0)>=FORMACION.get(pos,0):
+                    st.button(
+                        f"LÍMITE DE {NOMBRES_POSICION.get(pos,pos).upper()}",
+                        key=f"lim_{pid}",
+                        disabled=True,
+                        use_container_width=True,
+                    )
+                elif valor_actual+precio>PRESUPUESTO:
+                    st.button(
+                        "💰 PRESUPUESTO INSUFICIENTE",
+                        key=f"money_{pid}",
+                        disabled=True,
+                        use_container_width=True,
+                    )
+                elif len(mi_equipo)>=11:
+                    st.button(
+                        "PLANTILLA COMPLETA",
+                        key=f"full_{pid}",
+                        disabled=True,
+                        use_container_width=True,
+                    )
+                elif st.button(
+                    "＋ AÑADIR",
+                    key=f"add_{pid}",
+                    use_container_width=True,
+                ):
+                    nuevo=list(mi_equipo)
+                    nuevo.append(pid)
                     nuevo_valor=valor_equipo(nuevo)
-                    ok,mensaje=guardar_equipo(codigo,player_id,nuevo,PRESUPUESTO-nuevo_valor)
+                    nuevo_presupuesto=PRESUPUESTO-nuevo_valor
+
+                    ok,mensaje=guardar_equipo(
+                        codigo,
+                        player_id,
+                        nuevo,
+                        nuevo_presupuesto,
+                    )
                     if not ok:
                         st.error(mensaje)
                     else:
-                        st.session_state["jugador_seleccionado_reciente"] = pid
-                        st.markdown(
-                            f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
-                            unsafe_allow_html=True,
-                        )
+                        st.rerun()
 
             if mostrados==0:
                 st.info("No hay jugadores que coincidan con los filtros.")
