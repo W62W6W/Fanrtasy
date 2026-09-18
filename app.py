@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -112,8 +111,7 @@ st.markdown(
         .slot-name{font-size:10px}
         .stats-legend{font-size:12px;gap:8px}
     }
-100%{opacity:0}}
-    100%{opacity:0}}\n    .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
+    .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
     .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
     .stButton>button{background:linear-gradient(135deg,#2563eb,#4f46e5)!important;color:white!important;border:1px solid #6385ff!important;border-radius:9px!important;font-weight:800!important;min-height:40px!important;box-shadow:0 4px 12px rgba(37,99,235,.22)}
@@ -127,23 +125,7 @@ st.markdown(
     div[data-testid="column"]:has([data-testid="stTextInput"]) input::placeholder {color:#111827!important;opacity:1!important;}
     div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"]>div {background:#ffffff!important;color:#111827!important;border:1px solid #7aa2e8!important;}
     div[data-testid="column"]:has([data-testid="stTextInput"]) [data-baseweb="select"] span {color:#111827!important;}
-    .selected-player-button {
-    background: #16a34a !important;
-    color: white !important;
-    border: 1px solid #15803d !important;
-    border-radius: 10px;
-    min-height: 44px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    text-align: center;
-    box-sizing: border-box;
-    width: 100%;
-    margin: 0 0 10px 0;
-}
-</style>
+    </style>
     """,
     unsafe_allow_html=True,
 )
@@ -156,22 +138,22 @@ def dinero(valor):
     try:
         valor = float(valor)
     except (TypeError, ValueError):
-        return "€ 0"
+        return "0$"
 
     signo = "-" if valor < 0 else ""
     valor = abs(valor)
 
     if valor >= 1_000_000:
         n = valor / 1_000_000
-        texto = f"€ {int(n)}M" if n.is_integer() else f"€ {n:.1f}M"
+        texto = f"{int(n)}M$" if n.is_integer() else f"{n:.1f}M$"
         return signo + texto
 
     if valor >= 1_000:
         n = valor / 1_000
-        texto = f"€ {int(n)}K" if n.is_integer() else f"€ {n:.1f}K"
+        texto = f"{int(n)}K$" if n.is_integer() else f"{n:.1f}K$"
         return signo + texto
 
-    return signo + f"€ {int(valor)}"
+    return signo + f"{int(valor)}$"
 
 
 def contar_posiciones(equipo):
@@ -522,37 +504,21 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-
-if st.session_state.get("mostrar_aviso_seleccion"):
-    if time.time() < st.session_state.get("jugador_seleccionado_hasta", 0):
-        mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
-        st.markdown(
-            f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
-            unsafe_allow_html=True
-        )
-    else:
-        st.session_state.pop("jugador_seleccionado_mensaje", None)
-        st.session_state.pop("jugador_seleccionado_hasta", None)
-        st.session_state.pop("mostrar_aviso_seleccion", None)
-
 # ============================================================
-# ACTUALIZACIÓN AUTOMÁTICA DEL JUGADOR
+# ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
-# En app.py el jugador se actualiza cada 3 segundos durante TODA la partida.
-# Esto permite recibir automáticamente:
-# - apertura de la sala y selección
-# - cambios de alineación/listos
-# - inicio de jornadas
-# - resultados
-# - cambios en la clasificación
-#
-# El administrador (admin.py) es quien tendrá el refresco limitado
-# a la fase de selección.
+# La página del jugador se actualiza cada 3 segundos durante toda la sala.
+# Esto permite detectar automáticamente cuando el administrador:
+# - abre/cierra la selección
+# - inicia la partida
+# - simula una jornada
+# - publica los resultados
+# - cambia el estado de la sala
 if st.session_state.get("rol") == "player":
     st_autorefresh(
         interval=3000,
         limit=None,
-        key="fantasy_jugador_autorefresh",
+        key="fantasy_sala_autorefresh",
     )
 
 # ============================================================
@@ -600,12 +566,6 @@ if not st.session_state.rol:
     st.caption("🎮 Página de jugadores · El administrador controla la partida.")
     st.stop()
 
-
-if st.session_state.pop("mostrar_aviso_seleccion", False):
-    nombre_aviso = st.session_state.pop("jugador_seleccionado_mensaje", "Jugador")
-    st.toast(f"Jugador seleccionado: {nombre_aviso}", icon="✅")
-
-
 # ============================================================
 # OBTENER SALA
 # ============================================================
@@ -651,16 +611,16 @@ ya_seleccionado = len(mi_equipo) == 11
 # ============================================================
 
 if estado == "esperando" and not seleccion_abierta:
-    st.info("⏳ Esperando a que el administrador abra la sala.")
+    st.info("⏳ Esperando a que el administrador abra la selección.")
 
     st.markdown(
         """
         <div class="tutorial-box">
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
-            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la sala.</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
             <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
-            <div class="tutorial-step"><b>3.</b> Tienes <b>€ 615M</b> para construir tu plantilla.</div>
-            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva. Cuanto mayor sea el número, mayor es la capacidad ofensiva o defensiva.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva.</div>
             <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
             <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
@@ -681,7 +641,7 @@ if estado == "esperando" and not seleccion_abierta:
 if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
-        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo € 615M</div></div>',
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -746,6 +706,11 @@ if seleccion_abierta and not ya_seleccionado:
                 st.button("💰 PRESUPUESTO INSUFICIENTE",key=f"money_{pid}",disabled=True,use_container_width=True)
             elif len(mi_equipo)>=11:
                 st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
+            elif st.session_state.get("jugador_seleccionado_reciente") == pid:
+                st.markdown(
+                    f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
+                    unsafe_allow_html=True,
+                )
             elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
                 nuevo=list(mi_equipo); nuevo.append(pid)
                 nuevo_valor=valor_equipo(nuevo)
@@ -753,15 +718,15 @@ if seleccion_abierta and not ya_seleccionado:
                 if not ok:
                     st.error(mensaje)
                 else:
-                    # Sustituye visualmente el botón en el mismo lugar.
-                    # No hay rerun: el scroll no salta y el guardado ya quedó en Firebase.
+                    st.session_state["jugador_seleccionado_reciente"] = pid
                     st.markdown(
-                        '<div class="selected-player-button">✓ JUGADOR SELECCIONADO</div>',
+                        f'<div class="selected-player-button">✓ {nombre.upper()} SELECCIONADO</div>',
                         unsafe_allow_html=True,
                     )
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
+
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
     valor=valor_equipo(mi_equipo)
@@ -941,7 +906,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
             )
 
             if presupuesto_nuevo < 0:
-                st.error("No puedes superar los € 615M de presupuesto.")
+                st.error("No puedes superar los 615M de presupuesto.")
             elif st.button(
                 "🔄 CONFIRMAR CAMBIO",
                 key=f"confirmar_cambio_{jornada_actual}_{cambios_usados}",
