@@ -212,21 +212,28 @@ if torneo is None:
 # =========================
 # CALENDARIO COMPLETO
 # =========================
-st.header("🏟️ CALENDARIO COMPLETO")
+st.header("🏟️ CALENDARIO")
 
 siguiente_cal = len(torneo.get("resultados") or []) + 1
 
+# Todas las jornadas visibles a la vez. Los 7 partidos de cada jornada
+# se distribuyen en columnas para ocupar menos espacio vertical.
 for num_jornada, partidos_jornada in enumerate(torneo.get("jornadas") or [], start=1):
     if num_jornada < siguiente_cal:
-        estado_cal = "✅ SIMULADA"
+        estado_cal = "✅"
     elif num_jornada == siguiente_cal and siguiente_cal <= 7:
-        estado_cal = "🟢 PRÓXIMA"
+        estado_cal = "🟢"
     else:
-        estado_cal = "⚪ PENDIENTE"
+        estado_cal = "⚪"
 
-    st.markdown(f"### JORNADA {num_jornada} · {estado_cal}")
-    for partido in partidos_jornada:
-        st.write(f"⚽ **{partido['equipo_a']} vs {partido['equipo_b']}**")
+    st.markdown(f"**{estado_cal} JORNADA {num_jornada}**")
+
+    columnas = st.columns(4)
+    for i, partido in enumerate(partidos_jornada):
+        with columnas[i % 4]:
+            st.caption(
+                f"⚽ {partido['equipo_a']}  vs  {partido['equipo_b']}"
+            )
 
 st.divider()
 
