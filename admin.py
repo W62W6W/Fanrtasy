@@ -210,6 +210,27 @@ if torneo is None:
     st.stop()
 
 # =========================
+# CALENDARIO COMPLETO
+# =========================
+st.header("🏟️ CALENDARIO COMPLETO")
+
+siguiente_cal = len(torneo.get("resultados") or []) + 1
+
+for num_jornada, partidos_jornada in enumerate(torneo.get("jornadas") or [], start=1):
+    if num_jornada < siguiente_cal:
+        estado_cal = "✅ SIMULADA"
+    elif num_jornada == siguiente_cal and siguiente_cal <= 7:
+        estado_cal = "🟢 PRÓXIMA"
+    else:
+        estado_cal = "⚪ PENDIENTE"
+
+    st.markdown(f"### JORNADA {num_jornada} · {estado_cal}")
+    for partido in partidos_jornada:
+        st.write(f"⚽ **{partido['equipo_a']} vs {partido['equipo_b']}**")
+
+st.divider()
+
+# =========================
 # CONTROL DE PARTIDA
 # =========================
 st.header("🎮 CONTROL DE LA PARTIDA")
@@ -263,13 +284,13 @@ else:
         else:
             st.success(f"Jornada {siguiente-1} terminada. Los jugadores pueden hacer hasta 3 cambios.")
 
-        st.subheader(f"🏟️ JORNADA {siguiente}")
+        partidos_proximos = torneo["jornadas"][siguiente-1]
 
         if st.button(f"▶️ SIMULAR JORNADA {siguiente}",
                      key=f"simular_jornada_{siguiente}",
                      use_container_width=True):
 
-            partidos = torneo["jornadas"][siguiente-1]
+            partidos = partidos_proximos
             resultados = simular_jornada(partidos)
 
             puntos_por_usuario = {}
