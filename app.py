@@ -140,22 +140,22 @@ def dinero(valor):
     try:
         valor = float(valor)
     except (TypeError, ValueError):
-        return "0$"
+        return "€ 0"
 
     signo = "-" if valor < 0 else ""
     valor = abs(valor)
 
     if valor >= 1_000_000:
         n = valor / 1_000_000
-        texto = f"{int(n)}M$" if n.is_integer() else f"{n:.1f}M$"
+        texto = f"€ {int(n)}M" if n.is_integer() else f"€ {n:.1f}M"
         return signo + texto
 
     if valor >= 1_000:
         n = valor / 1_000
-        texto = f"{int(n)}K$" if n.is_integer() else f"{n:.1f}K$"
+        texto = f"€ {int(n)}K" if n.is_integer() else f"€ {n:.1f}K"
         return signo + texto
 
-    return signo + f"{int(valor)}$"
+    return signo + f"€ {int(valor)}"
 
 
 def contar_posiciones(equipo):
@@ -509,19 +509,26 @@ if "player_id" not in st.session_state:
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
-# La página del jugador se actualiza cada 3 segundos durante toda la sala.
-# Esto permite detectar automáticamente cuando el administrador:
-# - abre/cierra la selección
-# - inicia la partida
-# - simula una jornada
-# - publica los resultados
-# - cambia el estado de la sala
+# Antes y durante la selección se actualiza cada 3 segundos.
+# Así los jugadores detectan automáticamente:
+# - cuando el administrador abre la sala/selección
+# - cuando otros jugadores se conectan
+# - cuando un jugador pulsa "ESTOY LISTO"
+#
+# Después de comenzar las jornadas NO hay refresco automático.
+# La siguiente actualización se hace al pulsar "SIMULAR JORNADA".
 if st.session_state.get("rol") == "player":
-    st_autorefresh(
-        interval=3000,
-        limit=None,
-        key="fantasy_sala_autorefresh",
-    )
+    sala_refresco = obtener_sala(st.session_state.get("codigo_sala"))
+    if sala_refresco:
+        estado_refresco = sala_refresco.get("estado", "esperando")
+        seleccion_refresco = bool(sala_refresco.get("seleccion_abierta", False))
+
+        if estado_refresco == "esperando" or seleccion_refresco:
+            st_autorefresh(
+                interval=3000,
+                limit=None,
+                key="fantasy_sala_autorefresh",
+            )
 
 # ============================================================
 # PANTALLA INICIAL — SOLO JUGADORES
@@ -529,6 +536,20 @@ if st.session_state.get("rol") == "player":
 
 if not st.session_state.rol:
     st.title("⚽ WORLD CUP FANTASY")
+
+# Aviso temporal de selección: siempre aparece arriba, en una zona visible,
+# durante exactamente 2 segundos después de añadir un jugador.
+if st.session_state.get("mostrar_aviso_seleccion"):
+    mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
+    st.markdown(
+        f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
+        unsafe_allow_html=True
+    )
+    time.sleep(2)
+    st.session_state.pop("jugador_seleccionado_mensaje", None)
+    st.session_state.pop("mostrar_aviso_seleccion", None)
+    st.rerun()
+
     st.subheader("Multijugador")
 
     st.markdown(
@@ -613,16 +634,16 @@ ya_seleccionado = len(mi_equipo) == 11
 # ============================================================
 
 if estado == "esperando" and not seleccion_abierta:
-    st.info("⏳ Esperando a que el administrador abra la selección.")
+    st.info("⏳ Esperando a que el administrador abra la sala.")
 
     st.markdown(
         """
         <div class="tutorial-box">
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
-            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la sala.</div>
             <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
-            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
-            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>€ 615M</b> para construir tu plantilla.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva. Cuanto mayor sea el número, mayor es la capacidad ofensiva o defensiva.</div>
             <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
             <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
@@ -643,7 +664,7 @@ if estado == "esperando" and not seleccion_abierta:
 if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
-        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo € 615M</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -716,8 +737,7 @@ if seleccion_abierta and not ya_seleccionado:
                     st.error(mensaje)
                 else:
                     st.session_state["jugador_seleccionado_mensaje"] = jugador.get("nombre", "Jugador")
-                    st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
-                    st.session_state["mostrar_aviso_seleccion"] = True
+                        st.session_state["mostrar_aviso_seleccion"] = True
                     st.rerun()
 
         if mostrados==0:
@@ -913,7 +933,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
             )
 
             if presupuesto_nuevo < 0:
-                st.error("No puedes superar los 615M de presupuesto.")
+                st.error("No puedes superar los € 615M de presupuesto.")
             elif st.button(
                 "🔄 CONFIRMAR CAMBIO",
                 key=f"confirmar_cambio_{jornada_actual}_{cambios_usados}",
