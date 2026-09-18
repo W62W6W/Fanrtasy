@@ -735,23 +735,9 @@ if seleccion_abierta and not ya_seleccionado:
                     st.session_state["jugador_seleccionado_mensaje"] = jugador.get("nombre", "Jugador")
                     st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
                     st.session_state["mostrar_aviso_seleccion"] = True
-                st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
-                    st.rerun()
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
-    # Aviso temporal: después de añadir, se muestra y se mantiene 2 segundos.
-    if st.session_state.get("mostrar_aviso_seleccion"):
-        mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
-        st.markdown(
-            f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
-            unsafe_allow_html=True,
-        )
-        time.sleep(2)
-        st.session_state.pop("jugador_seleccionado_mensaje", None)
-        st.session_state.pop("mostrar_aviso_seleccion", None)
-        st.rerun()
-
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
     valor=valor_equipo(mi_equipo)
