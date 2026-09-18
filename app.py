@@ -659,6 +659,8 @@ jornada_actual = int(sala.get("jornada_actual", 0))
 mi_equipo = yo.get("equipo") or []
 ya_seleccionado = len(mi_equipo) == 11
 
+# Sincronizar el estado local del fragmento con Firebase al cargar la página.
+st.session_state["equipo_fragmento"] = list(mi_equipo)
 
 
 # Durante la selección, solo se refresca el fragmento de jugadores.
@@ -684,11 +686,13 @@ if estado == "esperando" and not seleccion_abierta:
         """
         <div class="tutorial-box">
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
-            <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la sala.</div>
+            <div class="tutorial-step"><b>1.</b> Espera a que el administrador <b>abra la sala</b>.</div>
             <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
             <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
-                        <div class="tutorial-step"><b>4.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
-            <div class="tutorial-step"><b>5.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ <b>Ataque:</b> indica la capacidad ofensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de ataque.<br>🛡️ <b>Defensa:</b> indica la capacidad defensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de defensa.</div>
+            <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+            <div class="tutorial-step"><b>BOTONES:</b> <b>＋ AÑADIR</b> añade al jugador directamente a tu plantilla y descuenta su precio · <b>🗑️ QUITAR</b> lo elimina de tu alineación · <b>✓ GUARDAR ALINEACIÓN</b> guarda tu 4-3-3 · <b>✅ ESTOY LISTO</b> confirma que ya has terminado · <b>🔄 CONFIRMAR CAMBIO</b> confirma un cambio después de una jornada.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -706,9 +710,30 @@ if estado == "esperando" and not seleccion_abierta:
 
 @st.fragment(run_every="3s")
 def mostrar_seleccion_fragmento():
+        # Mantener el equipo actualizado entre reruns del fragmento.
+        equipo_fragmento = st.session_state.get("equipo_fragmento")
+        if equipo_fragmento is not None:
+            mi_equipo = equipo_fragmento
+
         st.markdown(
             '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
             '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            """
+            <div class="tutorial-box">
+                <div class="tutorial-title">📖 MINI TUTORIAL</div>
+                <div class="tutorial-step"><b>1.</b> Espera a que el administrador <b>abra la sala</b>.</div>
+                <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
+                <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
+                <div class="tutorial-step"><b>4.</b> ⚔️ <b>Ataque:</b> indica la capacidad ofensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de ataque.<br>🛡️ <b>Defensa:</b> indica la capacidad defensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de defensa.</div>
+                <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+                <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+                <div class="tutorial-step"><b>BOTONES:</b> <b>＋ AÑADIR</b> añade al jugador directamente a tu plantilla y descuenta su precio · <b>🗑️ QUITAR</b> lo elimina de tu alineación · <b>✓ GUARDAR ALINEACIÓN</b> guarda tu 4-3-3 · <b>✅ ESTOY LISTO</b> confirma que ya has terminado · <b>🔄 CONFIRMAR CAMBIO</b> confirma un cambio después de una jornada.</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
@@ -822,7 +847,12 @@ def mostrar_seleccion_fragmento():
                     if not ok:
                         st.error(mensaje)
                     else:
-                        st.rerun()
+                        # Guardado inmediato en Firebase y actualización local dentro
+                        # del fragmento para no hacer rerun de toda la página ni saltar
+                        # la posición de scroll del usuario.
+                        mi_equipo = nuevo
+                        st.session_state["equipo_fragmento"] = nuevo
+                        st.rerun(scope="fragment")
 
             if mostrados==0:
                 st.info("No hay jugadores que coincidan con los filtros.")
