@@ -506,20 +506,6 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-# Aviso temporal de selección: aparece fijo arriba durante 2 segundos.
-# No bloquea la selección con time.sleep.
-if st.session_state.get("mostrar_aviso_seleccion"):
-    if time.time() < st.session_state.get("jugador_seleccionado_hasta", 0):
-        mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
-        st.markdown(
-            f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
-            unsafe_allow_html=True
-        )
-    else:
-        st.session_state.pop("jugador_seleccionado_mensaje", None)
-        st.session_state.pop("jugador_seleccionado_hasta", None)
-        st.session_state.pop("mostrar_aviso_seleccion", None)
-
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA DEL JUGADOR
 # ============================================================
@@ -738,6 +724,20 @@ if seleccion_abierta and not ya_seleccionado:
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
+
+        # Aviso temporal: se renderiza en ESTE mismo clic y queda fijo arriba.
+        # La animación CSS lo hace desaparecer visualmente a los 2 segundos.
+        if st.session_state.get("mostrar_aviso_seleccion"):
+            if time.time() < st.session_state.get("jugador_seleccionado_hasta", 0):
+                mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje", "Jugador")
+                st.markdown(
+                    f'<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.session_state.pop("jugador_seleccionado_mensaje", None)
+                st.session_state.pop("jugador_seleccionado_hasta", None)
+                st.session_state.pop("mostrar_aviso_seleccion", None)
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
     valor=valor_equipo(mi_equipo)

@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 from firebase import (
     crear_sala,
     obtener_sala,
@@ -129,6 +130,23 @@ if not sala:
 
 jugadores_sala = sala.get("jugadores") or {}
 torneo = obtener_torneo(codigo)
+
+# Refresco automático SOLO antes y durante la selección.
+# Después de iniciar la partida, el administrador actualiza con
+# "SIMULAR JORNADA".
+estado_admin_refresco = sala.get("estado", "esperando")
+jornada_admin_refresco = int(sala.get("jornada_actual", 0) or 0)
+seleccion_admin_refresco = bool(sala.get("seleccion_abierta", False))
+
+if jornada_admin_refresco == 0 and (
+    estado_admin_refresco == "esperando" or seleccion_admin_refresco
+):
+    st_autorefresh(
+        interval=3000,
+        limit=None,
+        key="fantasy_admin_seleccion_autorefresh",
+    )
+
 
 st.title("👑 WORLD CUP FANTASY — ADMIN")
 st.write(f"Administrador: **{st.session_state.admin_nombre}**")
