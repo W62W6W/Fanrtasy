@@ -957,6 +957,51 @@ if estado == "resultado" and len(mi_equipo) == 11:
         st.success("🟢 Ya estás listo para la siguiente jornada.")
 
 # ============================================================
+# ESTADÍSTICAS DEL PARTIDO
+# ============================================================
+
+def mostrar_estadisticas_partido(resultado, clave):
+    """Muestra goleadores y tarjetas del partido al pulsar el botón."""
+    equipo_a = resultado.get("equipo_a", "")
+    equipo_b = resultado.get("equipo_b", "")
+    stats_a = resultado.get("estadisticas_a") or {}
+    stats_b = resultado.get("estadisticas_b") or {}
+
+    eventos = []
+
+    for pid, stats in stats_a.items():
+        jugador = jugadores.get(pid, {})
+        nombre = jugador.get("nombre", pid)
+        goles_penalti = int(stats.get("goles_penalti", 0) or 0)
+        for numero_gol in range(int(stats.get("goles", 0) or 0)):
+            penal = numero_gol < goles_penalti
+            eventos.append(("gol", f"⚽ {nombre}{' (P)' if penal else ''}", equipo_a))
+        if int(stats.get("amarillas", 0) or 0):
+            eventos.append(("amarilla", f"🟨 {nombre}", equipo_a))
+        if int(stats.get("rojas", 0) or 0):
+            eventos.append(("roja", f"🟥 {nombre}", equipo_a))
+
+    for pid, stats in stats_b.items():
+        jugador = jugadores.get(pid, {})
+        nombre = jugador.get("nombre", pid)
+        goles_penalti = int(stats.get("goles_penalti", 0) or 0)
+        for numero_gol in range(int(stats.get("goles", 0) or 0)):
+            penal = numero_gol < goles_penalti
+            eventos.append(("gol", f"⚽ {nombre}{' (P)' if penal else ''}", equipo_b))
+        if int(stats.get("amarillas", 0) or 0):
+            eventos.append(("amarilla", f"🟨 {nombre}", equipo_b))
+        if int(stats.get("rojas", 0) or 0):
+            eventos.append(("roja", f"🟥 {nombre}", equipo_b))
+
+    if not eventos:
+        st.info("No hubo goles ni tarjetas en este partido.")
+        return
+
+    for tipo, texto, equipo in eventos:
+        st.write(f"{texto} — {equipo}")
+
+
+# ============================================================
 # PARTIDA / RESULTADOS
 # ============================================================
 
@@ -973,12 +1018,25 @@ if estado in ("jugando", "resultado", "final"):
     if jornada > 0 and len(resultados) >= jornada:
         resultados_jornada = resultados[jornada - 1]
 
-        for resultado in resultados_jornada:
+        for indice_partido, resultado in enumerate(resultados_jornada):
             st.write(
                 f"**{resultado['equipo_a']} "
                 f"{resultado['goles_a']} - {resultado['goles_b']} "
                 f"{resultado['equipo_b']}**"
             )
+
+            clave_partido = f"estadisticas_partido_{jornada}_{indice_partido}"
+            if st.button(
+                "📊 VER ESTADÍSTICAS DEL PARTIDO",
+                key=clave_partido,
+                use_container_width=True,
+            ):
+                st.session_state[clave_partido] = not st.session_state.get(clave_partido, False)
+
+            if st.session_state.get(clave_partido, False):
+                with st.container(border=True):
+                    st.markdown("**📊 ESTADÍSTICAS DEL PARTIDO**")
+                    mostrar_estadisticas_partido(resultado, clave_partido)
 
         # Los puntos de esta jornada se toman de Firebase, donde quedaron
         # guardados en el momento de la simulación. Así un cambio de plantilla
