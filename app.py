@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -33,15 +34,6 @@ NOMBRES_POSICION = {"POR": "Portero", "DEF": "Defensa", "MED": "Mediocampista", 
 st.markdown(
     """
     <style>
-    /* Estado seleccionado: botón verde en el mismo sitio que AÑADIR. */
-    div[data-testid="stButton"]:has(button[aria-label*="SELECCIONADO"]) button,
-    div[data-testid="stButton"]:has(button[title*="SELECCIONADO"]) button {
-        background:#16a34a !important;
-        color:#ffffff !important;
-        border:1px solid #15803d !important;
-        opacity:1 !important;
-        font-weight:800 !important;
-    }
     .stApp {background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.18),transparent 30%),linear-gradient(180deg,#061226 0%,#08172f 52%,#0b1b38 100%);color:#fff}
     [data-testid="stHeader"]{background:rgba(0,0,0,0)}
     [data-testid="stSidebar"]{background:#07152c;border-right:1px solid #244c91}
@@ -120,6 +112,8 @@ st.markdown(
         .slot-name{font-size:10px}
         .stats-legend{font-size:12px;gap:8px}
     }
+    .selection-toast{background:#d1fae5;border:1px solid #10b981;color:#065f46!important;border-radius:10px;padding:12px 16px;font-weight:800;text-align:center;margin:8px 0 12px;animation:selectionFade 2s forwards;}
+    @keyframes selectionFade{0%,85%{opacity:1}100%{opacity:0}}
     .budget-label{color:#bfdbfe;font-size:11px;font-weight:800;text-transform:uppercase}.budget-value{font-size:25px;font-weight:900}
     .filter-card{background:#0b1d3b;border:1px solid #244a83;border-radius:13px;padding:12px}
     .small{color:#93c5fd;font-size:12px}.box{background:linear-gradient(145deg,#12316b,#0a1737);border:1px solid #315ca8;border-radius:15px;padding:18px;margin-bottom:12px}.big{font-size:30px;font-weight:800}
@@ -147,22 +141,22 @@ def dinero(valor):
     try:
         valor = float(valor)
     except (TypeError, ValueError):
-        return "0$"
+        return "€ 0"
 
     signo = "-" if valor < 0 else ""
     valor = abs(valor)
 
     if valor >= 1_000_000:
         n = valor / 1_000_000
-        texto = f"{int(n)}M$" if n.is_integer() else f"{n:.1f}M$"
+        texto = f"€ {int(n)}M" if n.is_integer() else f"€ {n:.1f}M"
         return signo + texto
 
     if valor >= 1_000:
         n = valor / 1_000
-        texto = f"{int(n)}K$" if n.is_integer() else f"{n:.1f}K$"
+        texto = f"€ {int(n)}K" if n.is_integer() else f"€ {n:.1f}K"
         return signo + texto
 
-    return signo + f"{int(valor)}$"
+    return signo + f"€ {int(valor)}"
 
 
 def contar_posiciones(equipo):
@@ -628,10 +622,14 @@ if estado == "esperando" and not seleccion_abierta:
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
             <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
             <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
-            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
-            <div class="tutorial-step"><b>4.</b> ⚔️ Ataque indica capacidad ofensiva y 🛡️ Defensa indica capacidad defensiva.</div>
-            <div class="tutorial-step"><b>5.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
-            <div class="tutorial-step"><b>6.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>€ 615M</b> para construir tu plantilla.</div>
+            <div class="tutorial-step"><b>4.</b> ⚔️ <b>Ataque:</b> indica la capacidad ofensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de ataque.</div>
+            <div class="tutorial-step"><b>5.</b> 🛡️ <b>Defensa:</b> indica la capacidad defensiva del jugador. Cuanto mayor sea el número, mayor es su capacidad de defensa.</div>
+            <div class="tutorial-step"><b>6.</b> Pulsa <b>＋ AÑADIR</b> para seleccionar jugadores. Cuando un jugador esté en tu equipo aparecerá como <b>🟢 SELECCIONADO</b>.</div>
+            <div class="tutorial-step"><b>7.</b> Usa <b>🗑️ QUITAR</b> para sacar un jugador de tu alineación.</div>
+            <div class="tutorial-step"><b>8.</b> Cuando completes el 4-3-3, pulsa <b>✓ GUARDAR ALINEACIÓN</b> y después <b>✅ ESTOY LISTO</b>.</div>
+            <div class="tutorial-step"><b>9.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>10.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -650,7 +648,7 @@ if estado == "esperando" and not seleccion_abierta:
 if seleccion_abierta and not ya_seleccionado:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
-        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
+        '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo € 615M</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -699,8 +697,8 @@ if seleccion_abierta and not ya_seleccionado:
         mostrados=0
 
         for pid,jugador in jugadores.items():
-            if pid in mi_equipo: continue
             pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
+            esta_seleccionado = pid in mi_equipo
             precio=float(jugador.get("precio",0) or 0)
             if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
             if filtro_eq!="Todos" and eq!=filtro_eq: continue
@@ -709,13 +707,21 @@ if seleccion_abierta and not ya_seleccionado:
             mostrados+=1
             jugador_html(jugador)
 
+            if esta_seleccionado:
+                st.button(
+                    "🟢 SELECCIONADO",
+                    key=f"selected_{pid}",
+                    disabled=True,
+                    use_container_width=True,
+                )
+                continue
+
             if actuales.get(pos,0)>=FORMACION.get(pos,0):
                 st.button(f"LÍMITE DE {NOMBRES_POSICION.get(pos,pos).upper()}",key=f"lim_{pid}",disabled=True,use_container_width=True)
             elif valor_actual+precio>PRESUPUESTO:
                 st.button("💰 PRESUPUESTO INSUFICIENTE",key=f"money_{pid}",disabled=True,use_container_width=True)
             elif len(mi_equipo)>=11:
                 st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
-
             elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
                 nuevo=list(mi_equipo); nuevo.append(pid)
                 nuevo_valor=valor_equipo(nuevo)
@@ -723,15 +729,23 @@ if seleccion_abierta and not ya_seleccionado:
                 if not ok:
                     st.error(mensaje)
                 else:
-                    st.button(
-                        f"✓ {nombre.upper()} SELECCIONADO",
-                        key=f"selected_{pid}",
-                        disabled=True,
-                        use_container_width=True,
-                    )
+                    st.session_state["jugador_seleccionado_mensaje"] = jugador.get("nombre", "Jugador")
+                    st.session_state["jugador_seleccionado_hasta"] = time.time() + 2
 
         if mostrados==0:
             st.info("No hay jugadores que coincidan con los filtros.")
+
+    # Aviso temporal: aparece en verde durante exactamente 2 segundos.
+    mensaje_nombre = st.session_state.get("jugador_seleccionado_mensaje")
+    mensaje_hasta = st.session_state.get("jugador_seleccionado_hasta", 0)
+    if mensaje_nombre and time.time() < mensaje_hasta:
+        st.markdown(
+            f"""<div class="selection-toast">✅ Jugador seleccionado: {mensaje_nombre}</div>""",
+            unsafe_allow_html=True,
+        )
+    elif mensaje_nombre:
+        st.session_state.pop("jugador_seleccionado_mensaje", None)
+        st.session_state.pop("jugador_seleccionado_hasta", None)
 
     # Presupuesto y guardado quedan debajo de la selección, sin crear una
     # segunda lista de jugadores.
@@ -912,7 +926,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
             )
 
             if presupuesto_nuevo < 0:
-                st.error("No puedes superar los 615M de presupuesto.")
+                st.error("No puedes superar los € 615M de presupuesto.")
             elif st.button(
                 "🔄 CONFIRMAR CAMBIO",
                 key=f"confirmar_cambio_{jornada_actual}_{cambios_usados}",
