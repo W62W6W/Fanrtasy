@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -671,11 +670,25 @@ if estado == "esperando" and not seleccion_abierta:
 
 @st.fragment(run_every="3s")
 def mostrar_seleccion_fragmento():
+        # Refrescamos la sala dentro del fragmento para que el presupuesto y la
+        # plantilla se actualicen sin rerun de toda la página (evita saltos de scroll).
+        sala_fragmento = obtener_sala(codigo) or {}
+        yo_fragmento = (sala_fragmento.get("jugadores") or {}).get(player_id) or {}
+        mi_equipo = list(yo_fragmento.get("equipo") or [])
+
         st.markdown(
             '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
             '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo 615M$</div></div>',
             unsafe_allow_html=True,
         )
+
+        # Aviso temporal después de añadir un jugador.
+        aviso = st.session_state.get("aviso_jugador_anadido")
+        if aviso:
+            st.success(aviso)
+            import time
+            time.sleep(2)
+            st.session_state.pop("aviso_jugador_anadido", None)
 
         # La alineación queda arriba para que se vea fácilmente tanto en computador
         # como en celular. Los botones para quitar están dentro de la propia alineación.
@@ -722,9 +735,10 @@ def mostrar_seleccion_fragmento():
             mostrados=0
 
             for pid,jugador in jugadores.items():
-                # Los jugadores que ya están en tu plantilla no aparecen de nuevo en el mercado.
-                if pid in mi_equipo:
-                    continue
+                # El último jugador añadido se mantiene visible en verde incluso
+                # después de la actualización automática de la página.
+                jugador_reciente = st.session_state.get("jugador_seleccionado_reciente")
+                if pid in mi_equipo and pid != jugador_reciente: continue
                 pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
                 precio=float(jugador.get("precio",0) or 0)
                 if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
@@ -741,34 +755,28 @@ def mostrar_seleccion_fragmento():
                 elif len(mi_equipo)>=11:
                     st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
                 elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
-                    # 1) Calculamos el nuevo presupuesto.
-                    # 2) Añadimos el jugador a la alineación.
-                    # 3) Guardamos AMBAS cosas en Firebase.
-                    nuevo_equipo = list(mi_equipo)
-                    nuevo_equipo.append(pid)
+                    # Añadir = comprar: se actualizan plantilla y presupuesto en Firebase
+                    # en la misma operación lógica. Después solo se rerun-ea el fragmento,
+                    # por lo que el usuario permanece en la misma posición de la página.
+                    nuevo=list(mi_equipo)
+                    nuevo.append(pid)
+                    nuevo_valor=valor_equipo(nuevo)
+                    nuevo_restante=PRESUPUESTO-nuevo_valor
 
-                    presupuesto_actual = float(yo.get("presupuesto") or PRESUPUESTO)
-                    nuevo_presupuesto = presupuesto_actual - precio
-
-                    if nuevo_presupuesto < 0:
-                        st.error("💰 No tienes presupuesto suficiente para este jugador.")
+                    ok,mensaje=guardar_equipo(
+                        codigo,
+                        player_id,
+                        nuevo,
+                        nuevo_restante,
+                    )
+                    if not ok:
+                        st.error(mensaje)
                     else:
-                        ok, mensaje = guardar_equipo(
-                            codigo,
-                            player_id,
-                            nuevo_equipo,
-                            nuevo_presupuesto,
+                        st.session_state["aviso_jugador_anadido"] = (
+                            f"✅ {nombre.upper()} se añadió a tu plantilla. "
+                            f"Presupuesto restante: {dinero(nuevo_restante)}"
                         )
-
-                        if not ok:
-                            st.error(mensaje)
-                        else:
-                            st.success(
-                                f"✅ {nombre.upper()} se añadió a tu plantilla. "
-                                f"Presupuesto restante: {dinero(nuevo_presupuesto)}"
-                            )
-                            time.sleep(2)
-                            st.rerun()
+                        st.rerun(scope="fragment")
 
             if mostrados==0:
                 st.info("No hay jugadores que coincidan con los filtros.")
