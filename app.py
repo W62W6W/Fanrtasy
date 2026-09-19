@@ -1,5 +1,5 @@
-import time
 import streamlit as st
+import time
 from streamlit_autorefresh import st_autorefresh
 from firebase import (
     obtener_sala,
@@ -624,9 +624,6 @@ estado = sala.get("estado", "esperando")
 seleccion_abierta = bool(sala.get("seleccion_abierta", False))
 jornada_actual = int(sala.get("jornada_actual", 0))
 mi_equipo = yo.get("equipo") or []
-# Copia visual sincronizada con Firebase; permite que AÑADIR se vea verde
-# inmediatamente dentro del fragmento sin perder la posición de la pantalla.
-st.session_state["equipo_ui"] = list(mi_equipo)
 ya_seleccionado = len(mi_equipo) == 11
 
 # Durante la selección, solo se refresca el fragmento de jugadores.
@@ -653,14 +650,10 @@ if estado == "esperando" and not seleccion_abierta:
         <div class="tutorial-box">
             <div class="tutorial-title">📖 MINI TUTORIAL</div>
             <div class="tutorial-step"><b>1.</b> Espera a que el administrador abra la selección.</div>
-            <div class="tutorial-step"><b>2.</b> Usa <b>Buscar jugador</b>, <b>POSICIÓN</b> y <b>SELECCIÓN</b> para encontrar jugadores.</div>
-            <div class="tutorial-step"><b>3.</b> Pulsa <b>＋ AÑADIR</b> para fichar un jugador. El precio se descuenta automáticamente y queda guardado.</div>
-            <div class="tutorial-step"><b>4.</b> Para quitar un fichaje, pulsa <b>🗑️ QUITAR</b> dentro de tu alineación. El dinero vuelve a tu presupuesto.</div>
-            <div class="tutorial-step"><b>5.</b> Completa la formación <b>1 POR · 4 DEF · 3 MED · 3 DEL</b> y pulsa <b>✓ GUARDAR ALINEACIÓN</b>.</div>
-            <div class="tutorial-step"><b>6.</b> Tienes <b>615M$</b> de presupuesto. ⚔️ Ataque = capacidad ofensiva · 🛡️ Defensa = capacidad defensiva.</div>
-            <div class="tutorial-step"><b>7.</b> Pulsa <b>✅ ESTOY LISTO</b> para confirmar tu plantilla.</div>
-            <div class="tutorial-step"><b>8.</b> Después de cada jornada puedes hacer hasta <b>3 cambios</b> y confirmar cada uno con <b>🔄 CONFIRMAR CAMBIO</b>.</div>
-            <div class="tutorial-step"><b>9.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
+            <div class="tutorial-step"><b>2.</b> Forma tu equipo con <b>1 portero · 4 defensas · 3 mediocampistas · 3 delanteros</b>.</div>
+            <div class="tutorial-step"><b>3.</b> Tienes <b>615M$</b> para construir tu plantilla.</div>
+                        <div class="tutorial-step"><b>4.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>5.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -724,12 +717,14 @@ def mostrar_seleccion_fragmento():
         with col_mercado:
             st.markdown(f'<div class="section-title">JUGADORES DISPONIBLES <span class="small">· {len(jugadores)} jugadores</span></div>',unsafe_allow_html=True)
             st.markdown('<div class="market-head"><div></div><div>JUGADOR</div><div>ESTADÍSTICAS</div><div>PRECIO</div></div>',unsafe_allow_html=True)
-            equipo_ui = list(st.session_state.get("equipo_ui", mi_equipo))
-            actuales=contar_posiciones(equipo_ui)
-            valor_actual=valor_equipo(equipo_ui)
+            actuales=contar_posiciones(mi_equipo)
+            valor_actual=valor_equipo(mi_equipo)
             mostrados=0
 
             for pid,jugador in jugadores.items():
+                # Los jugadores que ya están en tu plantilla no aparecen de nuevo en el mercado.
+                if pid in mi_equipo:
+                    continue
                 pos=jugador.get("posicion"); eq=jugador.get("equipo"); nombre=jugador.get("nombre","")
                 precio=float(jugador.get("precio",0) or 0)
                 if filtro_pos_codigo!="Todos" and pos!=filtro_pos_codigo: continue
@@ -739,41 +734,50 @@ def mostrar_seleccion_fragmento():
                 mostrados+=1
                 jugador_html(jugador)
 
-                # Si ya está realmente en la plantilla, permanece visible en verde.
-                if pid in equipo_ui:
-                    st.markdown(
-                        f'<div class="selected-player-button">✓ {nombre.upper()} AÑADIDO A TU PLANTILLA</div>',
-                        unsafe_allow_html=True,
-                    )
-                    continue
-
                 if actuales.get(pos,0)>=FORMACION.get(pos,0):
                     st.button(f"LÍMITE DE {NOMBRES_POSICION.get(pos,pos).upper()}",key=f"lim_{pid}",disabled=True,use_container_width=True)
                 elif valor_actual+precio>PRESUPUESTO:
                     st.button("💰 PRESUPUESTO INSUFICIENTE",key=f"money_{pid}",disabled=True,use_container_width=True)
-                elif len(equipo_ui)>=11:
+                elif len(mi_equipo)>=11:
                     st.button("PLANTILLA COMPLETA",key=f"full_{pid}",disabled=True,use_container_width=True)
                 elif st.button("＋ AÑADIR",key=f"add_{pid}",use_container_width=True):
-                    nuevo=list(equipo_ui)
-                    nuevo.append(pid)
-                    nuevo_valor=valor_equipo(nuevo)
-                    ok,mensaje=guardar_equipo(codigo,player_id,nuevo,PRESUPUESTO-nuevo_valor)
-                    if not ok:
-                        st.error(mensaje)
+                    # 1) Calculamos el nuevo presupuesto.
+                    # 2) Añadimos el jugador a la alineación.
+                    # 3) Guardamos AMBAS cosas en Firebase.
+                    nuevo_equipo = list(mi_equipo)
+                    nuevo_equipo.append(pid)
+
+                    presupuesto_actual = float(yo.get("presupuesto") or PRESUPUESTO)
+                    nuevo_presupuesto = presupuesto_actual - precio
+
+                    if nuevo_presupuesto < 0:
+                        st.error("💰 No tienes presupuesto suficiente para este jugador.")
                     else:
-                        st.session_state["equipo_ui"] = nuevo
-                        st.session_state["jugador_seleccionado_reciente"] = pid
-                        st.session_state["aviso_jugador"] = {"nombre": nombre, "hasta": time.time() + 2}
+                        ok, mensaje = guardar_equipo(
+                            codigo,
+                            player_id,
+                            nuevo_equipo,
+                            nuevo_presupuesto,
+                        )
+
+                        if not ok:
+                            st.error(mensaje)
+                        else:
+                            st.success(
+                                f"✅ {nombre.upper()} se añadió a tu plantilla. "
+                                f"Presupuesto restante: {dinero(nuevo_presupuesto)}"
+                            )
+                            time.sleep(2)
+                            st.rerun()
 
             if mostrados==0:
                 st.info("No hay jugadores que coincidan con los filtros.")
 
         # Presupuesto y guardado quedan debajo de la selección, sin crear una
         # segunda lista de jugadores.
-        equipo_ui = list(st.session_state.get("equipo_ui", mi_equipo))
-        valor=valor_equipo(equipo_ui)
+        valor=valor_equipo(mi_equipo)
         restante=PRESUPUESTO-valor
-        posiciones=contar_posiciones(equipo_ui)
+        posiciones=contar_posiciones(mi_equipo)
 
         st.markdown(
             f'<div class="budget-card">'
@@ -790,26 +794,20 @@ def mostrar_seleccion_fragmento():
             f"3 DELANTEROS {posiciones['DEL']}/3"
         )
 
-        puede_guardar=plantilla_completa(equipo_ui) and valor<=PRESUPUESTO
+        puede_guardar=plantilla_completa(mi_equipo) and valor<=PRESUPUESTO
         if st.button(
             "✓ GUARDAR ALINEACIÓN",
             disabled=not puede_guardar,
             use_container_width=True,
             key="guardar_alineacion_principal",
         ):
-            ok,mensaje=guardar_equipo(codigo,player_id,equipo_ui,restante)
+            ok,mensaje=guardar_equipo(codigo,player_id,mi_equipo,restante)
             if not ok:
                 st.error(mensaje)
             else:
                 st.rerun()
 
-        aviso = st.session_state.get("aviso_jugador")
-        if aviso and time.time() < aviso.get("hasta", 0):
-            st.success(f"Jugador seleccionado: {aviso.get('nombre', '')}")
-        elif aviso:
-            st.session_state.pop("aviso_jugador", None)
-
-        if not plantilla_completa(equipo_ui):
+        if not plantilla_completa(mi_equipo):
             st.caption("Completa: 1 portero · 4 defensas · 3 mediocampistas · 3 delanteros.")
 
 
