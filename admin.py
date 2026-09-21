@@ -14,7 +14,102 @@ from firebase import (
 )
 from datos import jugadores
 from simulador import generar_jornadas, simular_jornada
-from fantasy import calcular_fantasy, calcular_desgloses_partido
+
+
+# ============================================================
+# CÁLCULO FANTASY LOCAL DEL ADMIN
+# ============================================================
+# El administrador calcula los puntos sin importar fantasy.py.
+# Las reglas de puntuación se mantienen iguales.
+
+PUNTOS_GOL = {
+    "POR": 10,
+    "DEF": 6,
+    "MED": 5,
+    "DEL": 4,
+}
+
+def calcular_desglose(jugador, stats, goles_recibidos, porteria_a_cero):
+    posicion = jugador["posicion"]
+    minutos = stats.get("minutos", 0)
+    desglose = {}
+
+    if minutos >= 60:
+        desglose["Participación"] = 2
+    elif minutos > 0:
+        desglose["Participación"] = 1
+    else:
+        desglose["Participación"] = 0
+
+    desglose["Goles"] = stats.get("goles", 0) * PUNTOS_GOL[posicion]
+    desglose["Asistencias"] = stats.get("asistencias", 0) * 3
+    desglose["Tiros a puerta"] = stats.get("tiros_a_puerta", 0) * 0.8
+    desglose["Regates"] = stats.get("regates", 0) * 0.3
+    desglose["Intercepciones"] = stats.get("intercepciones", 0) * 0.4
+    desglose["Duelos ganados"] = stats.get("duelos_ganados", 0) * 0.15
+    desglose["Balones recuperados"] = stats.get("balones_recuperados", 0) * 0.2
+    desglose["Despejes"] = stats.get("despejes", 0) * 0.3
+    desglose["Tapadas"] = stats.get("tapadas", 0) * 1
+    desglose["Balones perdidos"] = stats.get("balones_perdidos", 0) * -0.15
+    desglose["Faltas"] = stats.get("faltas", 0) * -0.1
+    desglose["Amarillas"] = stats.get("amarillas", 0) * -1
+    desglose["Rojas"] = stats.get("rojas", 0) * -3
+
+    if minutos >= 60 and porteria_a_cero:
+        if posicion in ("POR", "DEF"):
+            desglose["Portería a cero"] = 4
+        elif posicion == "MED":
+            desglose["Portería a cero"] = 1
+        else:
+            desglose["Portería a cero"] = 0
+    else:
+        desglose["Portería a cero"] = 0
+
+    desglose["Goles recibidos"] = 0
+    return desglose
+
+
+def calcular_fantasy(resultado):
+    goles_a = resultado["goles_a"]
+    goles_b = resultado["goles_b"]
+    fantasy = {}
+
+    for id_jugador, stats in resultado["estadisticas_a"].items():
+        jugador = jugadores[id_jugador]
+        fantasy[id_jugador] = round(
+            sum(calcular_desglose(jugador, stats, goles_b, goles_b == 0).values()),
+            2,
+        )
+
+    for id_jugador, stats in resultado["estadisticas_b"].items():
+        jugador = jugadores[id_jugador]
+        fantasy[id_jugador] = round(
+            sum(calcular_desglose(jugador, stats, goles_a, goles_a == 0).values()),
+            2,
+        )
+
+    return fantasy
+
+
+def calcular_desgloses_partido(resultado):
+    goles_a = resultado["goles_a"]
+    goles_b = resultado["goles_b"]
+    desgloses = {}
+
+    for id_jugador, stats in resultado["estadisticas_a"].items():
+        jugador = jugadores[id_jugador]
+        desgloses[id_jugador] = calcular_desglose(
+            jugador, stats, goles_b, goles_b == 0
+        )
+
+    for id_jugador, stats in resultado["estadisticas_b"].items():
+        jugador = jugadores[id_jugador]
+        desgloses[id_jugador] = calcular_desglose(
+            jugador, stats, goles_a, goles_a == 0
+        )
+
+    return desgloses
+
 
 st.set_page_config(
     page_title="World Cup Fantasy — Admin",
