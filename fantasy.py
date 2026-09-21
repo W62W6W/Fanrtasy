@@ -2,7 +2,15 @@
 import random
 import math
 
-from datos import jugadores, jugadores_equipo
+from datos import jugadores
+
+
+def jugadores_equipo(equipo):
+    return {
+        id_jugador: jugador
+        for id_jugador, jugador in jugadores.items()
+        if jugador.get("equipo") == equipo
+    }
 
 
 # ============================================================
