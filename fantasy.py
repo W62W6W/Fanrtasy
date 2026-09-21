@@ -4,6 +4,7 @@ import math
 
 from datos import jugadores
 
+FANTASY_VERSION = "estadisticas-partido-v2"
 
 def jugadores_equipo(equipo):
     return {
