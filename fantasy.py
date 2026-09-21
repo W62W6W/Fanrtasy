@@ -1132,24 +1132,205 @@ def simular_torneo():
     }
 
 
+
+# ============================================================
+# PUNTOS POR POSICIÓN
+# ============================================================
+
+PUNTOS_GOL = {
+    "POR": 10,
+    "DEF": 6,
+    "MED": 5,
+    "DEL": 4,
+}
+
+
+# ============================================================
+# CALCULAR DESGLOSE DE PUNTOS
+# ============================================================
+
+def calcular_desglose(
+    jugador,
+    stats,
+    goles_recibidos,
+    porteria_a_cero,
+):
+    posicion = jugador["posicion"]
+    minutos = stats.get("minutos", 0)
+
+    desglose = {}
+
+    # PARTICIPACIÓN
+    if minutos >= 60:
+        desglose["Participación"] = 2
+    elif minutos > 0:
+        desglose["Participación"] = 1
+    else:
+        desglose["Participación"] = 0
+
+    # GOLES
+    desglose["Goles"] = stats.get("goles", 0) * PUNTOS_GOL[posicion]
+
+    # ASISTENCIAS
+    desglose["Asistencias"] = stats.get("asistencias", 0) * 3
+
+    # TIROS A PUERTA
+    desglose["Tiros a puerta"] = stats.get("tiros_a_puerta", 0) * 0.8
+
+    # REGATES
+    desglose["Regates"] = stats.get("regates", 0) * 0.3
+
+    # INTERCEPCIONES
+    desglose["Intercepciones"] = stats.get("intercepciones", 0) * 0.4
+
+    # DUELOS GANADOS
+    desglose["Duelos ganados"] = stats.get("duelos_ganados", 0) * 0.15
+
+    # BALONES RECUPERADOS
+    desglose["Balones recuperados"] = stats.get("balones_recuperados", 0) * 0.2
+
+    # DESPEJES
+    desglose["Despejes"] = stats.get("despejes", 0) * 0.3
+
+    # TAPADAS
+    desglose["Tapadas"] = stats.get("tapadas", 0) * 1
+
+    # BALONES PERDIDOS
+    desglose["Balones perdidos"] = stats.get("balones_perdidos", 0) * -0.15
+
+    # FALTAS
+    desglose["Faltas"] = stats.get("faltas", 0) * -0.1
+
+    # AMARILLAS
+    desglose["Amarillas"] = stats.get("amarillas", 0) * -1
+
+    # ROJAS
+    desglose["Rojas"] = stats.get("rojas", 0) * -3
+
+    # PORTERÍA A CERO
+    # Solo cuenta con al menos 60 minutos.
+    if minutos >= 60 and porteria_a_cero:
+        if posicion in ("POR", "DEF"):
+            desglose["Portería a cero"] = 4
+        elif posicion == "MED":
+            desglose["Portería a cero"] = 1
+        else:
+            desglose["Portería a cero"] = 0
+    else:
+        desglose["Portería a cero"] = 0
+
+    # No se descuenta por goles recibidos: la portería a cero
+    # es la bonificación definida para este sistema.
+    desglose["Goles recibidos"] = 0
+
+    return desglose
+
+
+# ============================================================
+# CALCULAR PUNTOS
+# ============================================================
+
+def calcular_puntos(
+    jugador,
+    stats,
+    goles_recibidos,
+    porteria_a_cero,
+):
+    desglose = calcular_desglose(
+        jugador,
+        stats,
+        goles_recibidos,
+        porteria_a_cero,
+    )
+
+    return round(sum(desglose.values()), 2)
+
+
+# ============================================================
+# CALCULAR FANTASY
+# ============================================================
+
+def calcular_fantasy(resultado):
+    goles_a = resultado["goles_a"]
+    goles_b = resultado["goles_b"]
+
+    estadisticas_a = resultado["estadisticas_a"]
+    estadisticas_b = resultado["estadisticas_b"]
+
+    fantasy = {}
+
+    porteria_a_cero = goles_b == 0
+    for id_jugador, stats in estadisticas_a.items():
+        jugador = jugadores[id_jugador]
+        fantasy[id_jugador] = calcular_puntos(
+            jugador,
+            stats,
+            goles_b,
+            porteria_a_cero,
+        )
+
+    porteria_b_cero = goles_a == 0
+    for id_jugador, stats in estadisticas_b.items():
+        jugador = jugadores[id_jugador]
+        fantasy[id_jugador] = calcular_puntos(
+            jugador,
+            stats,
+            goles_a,
+            porteria_b_cero,
+        )
+
+    return fantasy
+
+
+# ============================================================
+# CALCULAR DESGLOSE FANTASY DEL PARTIDO
+# ============================================================
+
+def calcular_desgloses_partido(resultado):
+    goles_a = resultado["goles_a"]
+    goles_b = resultado["goles_b"]
+
+    estadisticas_a = resultado["estadisticas_a"]
+    estadisticas_b = resultado["estadisticas_b"]
+
+    desgloses = {}
+
+    porteria_a_cero = goles_b == 0
+    for id_jugador, stats in estadisticas_a.items():
+        jugador = jugadores[id_jugador]
+        desgloses[id_jugador] = calcular_desglose(
+            jugador,
+            stats,
+            goles_b,
+            porteria_a_cero,
+        )
+
+    porteria_b_cero = goles_a == 0
+    for id_jugador, stats in estadisticas_b.items():
+        jugador = jugadores[id_jugador]
+        desgloses[id_jugador] = calcular_desglose(
+            jugador,
+            stats,
+            goles_a,
+            porteria_b_cero,
+        )
+
+    return desgloses
+
+
 # ============================================================
 # MOSTRAR PARTIDO
 # ============================================================
 
-def mostrar_partido(
-    resultado
-):
-
+def mostrar_partido(resultado):
     print()
     print("=" * 70)
-
     print(
         f"{resultado['equipo_a']} "
         f"{resultado['goles_a']} - "
         f"{resultado['goles_b']} "
         f"{resultado['equipo_b']}"
     )
-
     print("=" * 70)
 
 
@@ -1158,125 +1339,14 @@ def mostrar_partido(
 # ============================================================
 
 if __name__ == "__main__":
-
-    print(
-        "🏆 SIMULADOR WORLD CUP FANTASY"
-    )
-
+    resultado = simular_partido("Francia", "España")
+    fantasy = calcular_fantasy(resultado)
+    mostrar_partido(resultado)
     print()
-
-    print(
-        "Equipos:"
-    )
-
-    for equipo in EQUIPOS:
-
-        print(
-            f"🇺🇳 {equipo}"
-        )
-
-
-    print()
-
-    print(
-        "Generando calendario..."
-    )
-
-    jornadas = generar_jornadas()
-
-    print(
-        f"Jornadas: {len(jornadas)}"
-    )
-
-    print(
-        f"Partidos: "
-        f"{sum(len(j) for j in jornadas)}"
-    )
-
-
-    # ========================================================
-    # MOSTRAR CALENDARIO
-    # ========================================================
-
-    for numero, jornada in enumerate(
-        jornadas,
-        start=1
+    print("🏆 PUNTUACIÓN FANTASY")
+    for id_jugador, puntos in sorted(
+        fantasy.items(),
+        key=lambda x: x[1],
+        reverse=True,
     ):
-
-        print()
-
-        print(
-            f"JORNADA {numero}"
-        )
-
-        print(
-            "-" * 50
-        )
-
-        for partido in jornada:
-
-            print(
-                f"{partido['equipo_a']} "
-                f"vs "
-                f"{partido['equipo_b']}"
-            )
-
-
-    # ========================================================
-    # SIMULAR UN PARTIDO
-    # ========================================================
-
-    print()
-
-    print(
-        "Simulando un partido..."
-    )
-
-    resultado = simular_partido(
-        "Francia",
-        "España"
-    )
-
-    mostrar_partido(
-        resultado
-    )
-
-
-    # ========================================================
-    # SIMULAR TORNEO
-    # ========================================================
-
-    print()
-
-    print(
-        "Simulando torneo..."
-    )
-
-    torneo = simular_torneo()
-
-    clasificacion = ordenar_clasificacion(
-        torneo["clasificacion"]
-    )
-
-    print()
-
-    print(
-        "🏆 CLASIFICACIÓN"
-    )
-
-    print(
-        "-" * 70
-    )
-
-    for posicion, equipo in enumerate(
-        clasificacion,
-        start=1
-    ):
-
-        print(
-            f"{posicion}. "
-            f"{equipo['equipo']} "
-            f"- "
-            f"{equipo['puntos']} pts"
-        )
-
+        print(f"{jugadores[id_jugador]['nombre']}: {puntos:.2f}")
