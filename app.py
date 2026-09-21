@@ -507,6 +507,11 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
+# Partido cuyas estadísticas están abiertas en la sección de resultados.
+# Es independiente de las claves de los widgets de Streamlit.
+if "partido_estadisticas_abierto" not in st.session_state:
+    st.session_state.partido_estadisticas_abierto = None
+
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
@@ -1026,14 +1031,21 @@ if estado in ("jugando", "resultado", "final"):
             )
 
             clave_partido = f"estadisticas_partido_{jornada}_{indice_partido}"
+
+            # El botón y el estado de apertura deben tener claves distintas.
+            # Si se usa la misma clave en session_state y en st.button,
+            # Streamlit lanza StreamlitWidgetAlreadyInstantiatedError.
             if st.button(
                 "📊 VER ESTADÍSTICAS DEL PARTIDO",
-                key=clave_partido,
+                key=f"ver_stats_{clave_partido}",
                 use_container_width=True,
             ):
-                st.session_state[clave_partido] = not st.session_state.get(clave_partido, False)
+                if st.session_state.partido_estadisticas_abierto == clave_partido:
+                    st.session_state.partido_estadisticas_abierto = None
+                else:
+                    st.session_state.partido_estadisticas_abierto = clave_partido
 
-            if st.session_state.get(clave_partido, False):
+            if st.session_state.partido_estadisticas_abierto == clave_partido:
                 with st.container(border=True):
                     st.markdown("**📊 ESTADÍSTICAS DEL PARTIDO**")
                     mostrar_estadisticas_partido(resultado, clave_partido)
