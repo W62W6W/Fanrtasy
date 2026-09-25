@@ -507,11 +507,6 @@ if "codigo_sala" not in st.session_state:
 if "player_id" not in st.session_state:
     st.session_state.player_id = None
 
-# Partido cuyas estadísticas están abiertas en la sección de resultados.
-# Es independiente de las claves de los widgets de Streamlit.
-if "partido_estadisticas_abierto" not in st.session_state:
-    st.session_state.partido_estadisticas_abierto = None
-
 # ============================================================
 # ACTUALIZACIÓN AUTOMÁTICA MULTIJUGADOR
 # ============================================================
@@ -613,6 +608,7 @@ seleccion_abierta = bool(sala.get("seleccion_abierta", False))
 jornada_actual = int(sala.get("jornada_actual", 0))
 mi_equipo = yo.get("equipo") or []
 ya_seleccionado = len(mi_equipo) == 11
+ya_listo = bool(yo.get("listo", False))
 
 # ============================================================
 # ESPERA
@@ -633,7 +629,7 @@ if estado == "esperando" and not seleccion_abierta:
             <div class="tutorial-step"><b>6.</b> Pulsa <b>＋ AÑADIR</b> para seleccionar jugadores. Cuando un jugador esté en tu equipo aparecerá como <b>🟢 SELECCIONADO</b>.</div>
             <div class="tutorial-step"><b>7.</b> Usa <b>🗑️ QUITAR</b> para sacar un jugador de tu alineación.</div>
             <div class="tutorial-step"><b>8.</b> Cuando completes el 4-3-3, pulsa <b>✓ GUARDAR ALINEACIÓN</b> y después <b>✅ ESTOY LISTO</b>.</div>
-            <div class="tutorial-step"><b>9.</b> Después de cada jornada podrás hacer hasta <b>3 cambios</b>.</div>
+            <div class="tutorial-step"><b>9.</b> Después de cada jornada podrás hacer hasta <b>1 cambio</b>.</div>
             <div class="tutorial-step"><b>10.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
@@ -650,7 +646,7 @@ if estado == "esperando" and not seleccion_abierta:
 # SELECCIÓN
 # ============================================================
 
-if seleccion_abierta and not ya_seleccionado:
+if seleccion_abierta and not ya_listo:
     st.markdown(
         '<div class="hero"><div class="hero-title">👕 SELECCIONAR EQUIPO</div>'
         '<div class="hero-sub">Arma tu 4-3-3 · 1 PORTERO · 4 DEFENSAS · 3 MEDIOCAMPISTAS · 3 DELANTEROS · Presupuesto máximo € 615M</div></div>',
@@ -789,25 +785,12 @@ if seleccion_abierta and not ya_seleccionado:
     if not plantilla_completa(mi_equipo):
         st.caption("Completa: 1 portero · 4 defensas · 3 mediocampistas · 3 delanteros.")
 
-# ============================================================
-# ALINEACIÓN YA GUARDADA: BLOQUEADA
-# ============================================================
-
-elif ya_seleccionado:
-    st.success(
-        "✅ Tu alineación está guardada. "
-        "Después de cada jornada puedes hacer hasta 3 cambios de jugadores."
-    )
-
-    mostrar_alineacion(mi_equipo)
-
     st.divider()
-
-    # ESTE BOTÓN ESTÁ DEBAJO DE LA ALINEACIÓN.
-    if estado != "resultado" and not yo.get("listo", False):
+    if not yo.get("listo", False):
         if st.button(
             "✅ ESTOY LISTO",
             key=f"listo_alineacion_{player_id}",
+            disabled=not plantilla_completa(mi_equipo),
             use_container_width=True,
         ):
             ok, mensaje = marcar_listo(codigo, player_id, True)
@@ -815,8 +798,22 @@ elif ya_seleccionado:
                 st.error(mensaje)
             else:
                 st.rerun()
-    else:
-        st.success("✅ Ya estás marcado como LISTO.")
+
+# ============================================================
+# ALINEACIÓN YA GUARDADA: BLOQUEADA
+# ============================================================
+
+elif ya_seleccionado:
+    st.success(
+        "✅ Tu alineación está guardada. "
+        "Después de cada jornada puedes hacer hasta 1 cambio de jugador."
+    )
+
+    mostrar_alineacion(mi_equipo)
+
+    st.divider()
+
+    st.success("🟢 Ya estás marcado como LISTO.")
 
     st.metric("💰 VALOR DE PLANTILLA", dinero(valor_equipo(mi_equipo)))
 
@@ -830,7 +827,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
     st.header("🔄 CAMBIOS DE PLANTILLA")
 
     cambios_usados = int(yo.get("cambios_jornada", 0))
-    cambios_restantes = max(0, 3 - cambios_usados)
+    cambios_restantes = max(0, 1 - cambios_usados)
     puntos_actuales = puntos_guardados_usuario_jornada(sala, player_id, jornada_actual)
 
     # Puntos de TODOS los jugadores de la jornada recién terminada.
@@ -850,8 +847,8 @@ if estado == "resultado" and len(mi_equipo) == 11:
     }
 
     st.info(
-        f"Puedes hacer hasta **3 cambios** después de esta jornada. "
-        f"Has usado **{cambios_usados}/3**."
+        f"Puedes hacer hasta **1 cambio** después de esta jornada. "
+        f"Has usado **{cambios_usados}/1**."
     )
 
     # No es obligatorio hacer cambios: se puede continuar directamente.
@@ -949,7 +946,7 @@ if estado == "resultado" and len(mi_equipo) == 11:
                     st.success("✅ Cambio realizado correctamente.")
                     st.rerun()
 
-    # Puedes pulsar ESTOY LISTO con 0, 1, 2 o 3 cambios.
+    # Puedes pulsar ESTOY LISTO con 0 o 1 cambio.
     st.divider()
     if not yo.get("listo", False):
         if st.button("✅ ESTOY LISTO", key=f"listo_cambios_{jornada_actual}_{player_id}", use_container_width=True):
@@ -1020,8 +1017,9 @@ if estado in ("jugando", "resultado", "final"):
     torneo = obtener_torneo(codigo)
     resultados = (torneo or {}).get("resultados") or []
 
-    if jornada > 0 and len(resultados) >= jornada:
-        resultados_jornada = resultados[jornada - 1]
+    if resultados:
+        jornada_resultados = min(max(jornada, 1), len(resultados))
+        resultados_jornada = resultados[jornada_resultados - 1]
 
         for indice_partido, resultado in enumerate(resultados_jornada):
             st.write(
@@ -1030,22 +1028,15 @@ if estado in ("jugando", "resultado", "final"):
                 f"{resultado['equipo_b']}**"
             )
 
-            clave_partido = f"estadisticas_partido_{jornada}_{indice_partido}"
-
-            # El botón y el estado de apertura deben tener claves distintas.
-            # Si se usa la misma clave en session_state y en st.button,
-            # Streamlit lanza StreamlitWidgetAlreadyInstantiatedError.
+            clave_partido = f"estadisticas_partido_{jornada_resultados}_{indice_partido}"
             if st.button(
                 "📊 VER ESTADÍSTICAS DEL PARTIDO",
-                key=f"ver_stats_{clave_partido}",
+                key=clave_partido,
                 use_container_width=True,
             ):
-                if st.session_state.partido_estadisticas_abierto == clave_partido:
-                    st.session_state.partido_estadisticas_abierto = None
-                else:
-                    st.session_state.partido_estadisticas_abierto = clave_partido
+                st.session_state[clave_partido] = not st.session_state.get(clave_partido, False)
 
-            if st.session_state.partido_estadisticas_abierto == clave_partido:
+            if st.session_state.get(clave_partido, False):
                 with st.container(border=True):
                     st.markdown("**📊 ESTADÍSTICAS DEL PARTIDO**")
                     mostrar_estadisticas_partido(resultado, clave_partido)
@@ -1060,7 +1051,7 @@ if estado in ("jugando", "resultado", "final"):
         sala_actualizada = obtener_sala(codigo) or sala
         resultados_guardados = sala_actualizada.get("resultados_jornadas") or {}
         puntos_guardados_usuario = resultados_guardados.get(
-            f"jornada_{jornada}", {},
+            f"jornada_{jornada_resultados}", {},
         ) or {}
 
         # El admin guarda los puntos de CADA jugador de CADA usuario.
@@ -1069,7 +1060,7 @@ if estado in ("jugando", "resultado", "final"):
             sala_actualizada.get("puntos_jugadores_jornadas") or {}
         )
         puntos_jornada_por_usuario = puntos_jugadores_guardados.get(
-            f"jornada_{jornada}", {},
+            f"jornada_{jornada_resultados}", {},
         ) or {}
         puntos_jornada = puntos_jornada_por_usuario.get(player_id)
 
@@ -1121,7 +1112,7 @@ if estado in ("jugando", "resultado", "final"):
             mi_equipo,
             puntos_jornada,
             detalles,
-            jornada,
+            jornada_resultados,
             guardado=detalles_guardados_disponibles,
         )
 
