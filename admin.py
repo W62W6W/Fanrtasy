@@ -384,7 +384,7 @@ else:
         if siguiente == 1:
             st.success("🚀 PARTIDA INICIADA. Las alineaciones están bloqueadas.")
         else:
-            st.success(f"Jornada {siguiente-1} terminada. Los jugadores pueden hacer hasta 3 cambios.")
+            st.success(f"Jornada {siguiente-1} terminada. Los jugadores pueden hacer 1 cambio.")
 
         partidos_proximos = torneo["jornadas"][siguiente-1]
 

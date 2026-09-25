@@ -629,7 +629,7 @@ if estado == "esperando" and not seleccion_abierta:
             <div class="tutorial-step"><b>6.</b> Pulsa <b>＋ AÑADIR</b> para seleccionar jugadores. Cuando un jugador esté en tu equipo aparecerá como <b>🟢 SELECCIONADO</b>.</div>
             <div class="tutorial-step"><b>7.</b> Usa <b>🗑️ QUITAR</b> para sacar un jugador de tu alineación.</div>
             <div class="tutorial-step"><b>8.</b> Cuando completes el 4-3-3, pulsa <b>✓ GUARDAR ALINEACIÓN</b> y después <b>✅ ESTOY LISTO</b>.</div>
-            <div class="tutorial-step"><b>9.</b> Después de cada jornada podrás hacer hasta <b>1 cambio</b>.</div>
+            <div class="tutorial-step"><b>9.</b> Después de cada jornada podrás hacer <b>1 cambio</b>.</div>
             <div class="tutorial-step"><b>10.</b> Los puntos de jornadas anteriores quedan guardados y no cambian con tus fichajes.</div>
         </div>
         """,
@@ -1029,14 +1029,18 @@ if estado in ("jugando", "resultado", "final"):
             )
 
             clave_partido = f"estadisticas_partido_{jornada_resultados}_{indice_partido}"
+            estado_partido = f"{clave_partido}_abierto"
+            if estado_partido not in st.session_state:
+                st.session_state[estado_partido] = False
+
             if st.button(
                 "📊 VER ESTADÍSTICAS DEL PARTIDO",
                 key=clave_partido,
                 use_container_width=True,
             ):
-                st.session_state[clave_partido] = not st.session_state.get(clave_partido, False)
+                st.session_state[estado_partido] = not st.session_state[estado_partido]
 
-            if st.session_state.get(clave_partido, False):
+            if st.session_state[estado_partido]:
                 with st.container(border=True):
                     st.markdown("**📊 ESTADÍSTICAS DEL PARTIDO**")
                     mostrar_estadisticas_partido(resultado, clave_partido)
